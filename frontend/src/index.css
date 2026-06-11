@@ -3,36 +3,36 @@
    ========================================================================== */
 
 :root {
-  /* Color Palette - Vibrant Modern Theme */
-  --primary: #4f46e5;       /* Royal Indigo */
-  --primary-hover: #4338ca;
-  --secondary: #7c3aed;     /* Electric Purple */
-  --accent: #f59e0b;        /* Vibrant Gold */
-  --success: #10b981;       /* Emerald Green */
-  --danger: #ef4444;        /* Crimson Red */
-  --info: #0ea5e9;          /* sky Blue */
+  /* Color Palette - Aurora Mint Theme */
+  --primary: #10b981;       /* Vibrant Mint */
+  --primary-hover: #059669; /* Darker Mint */
+  --secondary: #14b8a6;     /* Electric Teal */
+  --accent: #2dd4bf;        /* Bright Mint Accent */
+  --success: #34d399;       /* Emerald/Mint Success */
+  --danger: #f43f5e;        /* Crimson Rose */
+  --info: #06b6d4;          /* Neon Sky Blue */
   
-  /* Backgrounds & Text (Tailored HSL for depth) */
-  --bg-app: #0b0f19;        /* Cosmic Deep Navy */
-  --bg-card: rgba(22, 28, 45, 0.7); /* Deep Slate Glass */
-  --bg-input: #111827;      /* Dark Input Base */
+  /* Backgrounds & Text (Tailored for deep dark contrast) */
+  --bg-app: #080c14;        /* Deep Space Slate */
+  --bg-card: rgba(18, 24, 38, 0.85); /* Slate Glass Card */
+  --bg-input: #0f131f;      /* Dark Input Base */
   --text-primary: #f3f4f6;  /* Soft Crisp White */
-  --text-secondary: #9ca3af;/* Cool Grey */
-  --text-muted: #6b7280;
+  --text-secondary: #a0aec0;/* Cool Grey Label */
+  --text-muted: #718096;    /* Dark Muted */
   
   /* Borders & Highlights */
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(79, 70, 229, 0.6);
-  --border-success: rgba(16, 185, 129, 0.4);
-  --border-accent: rgba(245, 158, 11, 0.4);
+  --border-color: rgba(16, 185, 129, 0.12); /* Translucent Mint Border */
+  --border-focus: rgba(16, 185, 129, 0.6);
+  --border-success: rgba(52, 211, 153, 0.4);
+  --border-accent: rgba(45, 212, 191, 0.4);
   
   /* Shadows & Glassmorphic Blur */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.12);
-  --shadow-glow: 0 0 15px rgba(79, 70, 229, 0.35);
-  --shadow-glow-success: 0 0 15px rgba(16, 185, 129, 0.35);
-  --glass-blur: blur(12px);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.25), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+  --shadow-glow: 0 0 15px rgba(16, 185, 129, 0.3);
+  --shadow-glow-success: 0 0 15px rgba(52, 211, 153, 0.3);
+  --glass-blur: blur(16px);
   
   /* Layout Metrics */
   --radius-sm: 6px;
@@ -60,8 +60,8 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   background-image: 
-    radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(124, 58, 237, 0.1) 0px, transparent 50%);
+    radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(20, 184, 166, 0.08) 0px, transparent 50%);
   background-attachment: fixed;
   min-height: 100vh;
 }
@@ -163,10 +163,11 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: var(--radius-md);
   padding: 20px;
   box-shadow: var(--shadow-lg);
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .card:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(16, 185, 129, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), var(--shadow-glow);
 }
 .card-interactive {
   cursor: pointer;
