@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../../services/api';
 import { 
   User, Award, Star, Languages, Clock, MapPin, 
-  Mic, Square, RefreshCw, CheckCircle, ArrowRight, Download 
+  Mic, Square, RefreshCw, CheckCircle, ArrowRight, Download,
+  Briefcase, MessageSquare, Settings, ChevronRight
 } from 'lucide-react';
 
 interface WorkerModuleProps {
@@ -19,7 +20,7 @@ export const WorkerModule: React.FC<WorkerModuleProps> = ({
   onLogout,
   renderJobFeed,
 }) => {
-  const [activeTab, setActiveTab] = useState<'jobs' | 'passport'>('jobs');
+  const [activeTab, setActiveTab] = useState<'jobs' | 'passport' | 'chat' | 'profile'>('jobs');
   const [profile, setProfile] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [showAssessment, setShowAssessment] = useState(false);
@@ -30,8 +31,10 @@ export const WorkerModule: React.FC<WorkerModuleProps> = ({
   const t = {
     en: {
       welcome: 'Welcome,',
-      findJobs: 'Find Local Jobs',
-      myPassport: 'My Skill Passport',
+      findJobs: 'Jobs Feed',
+      myPassport: 'My Passport',
+      chatTab: 'Messages',
+      profileTab: 'Profile',
       assessmentAlert: 'Boost your visibility! Take the AI Oral Assessment to earn a Verified Expert badge.',
       takeAssessmentBtn: 'Start Oral Test (3 mins)',
       loading: 'Loading profile...',
@@ -49,8 +52,10 @@ export const WorkerModule: React.FC<WorkerModuleProps> = ({
     },
     hi: {
       welcome: 'स्वागत है,',
-      findJobs: 'आस-पास के काम',
-      myPassport: 'मेरा कौशल पासपोर्ट',
+      findJobs: 'काम खोजें',
+      myPassport: 'मेरा पासपोर्ट',
+      chatTab: 'संदेश',
+      profileTab: 'प्रोफ़ाइल',
       assessmentAlert: 'रोजगार के अवसर बढ़ाएं! एक्सपर्ट बैच कमाने के लिए एआई वोकल परीक्षा दें।',
       takeAssessmentBtn: 'परीक्षा शुरू करें (३ मिनट)',
       loading: 'प्रोफ़ाइल लोड हो रही है...',
@@ -104,10 +109,10 @@ export const WorkerModule: React.FC<WorkerModuleProps> = ({
         <button className="language-pill" onClick={onLogout}>{t.logout}</button>
       </header>
 
-      {/* Main Tab Scrolling View */}
+      {/* Main Scrolling View */}
       <div className="app-main">
         {/* Verification banner if no badges */}
-        {profile && (!profile.verifiedBadges || profile.verifiedBadges.length === 0) && !showAssessment && !isEditingProfile && (
+        {profile && (!profile.verifiedBadges || profile.verifiedBadges.length === 0) && !showAssessment && !isEditingProfile && activeTab === 'passport' && (
           <div className="card border-accent" style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(22, 28, 45, 0.7) 100%)' }}>
             <div className="flex-row mb-2">
               <Award className="text-accent" size={24} />
@@ -116,24 +121,6 @@ export const WorkerModule: React.FC<WorkerModuleProps> = ({
             <p className="text-secondary-label text-xs mb-3">{t.assessmentAlert}</p>
             <button className="btn btn-primary btn-success py-2 text-xs" onClick={() => setShowAssessment(true)}>
               {t.takeAssessmentBtn}
-            </button>
-          </div>
-        )}
-
-        {/* Tab Selector */}
-        {!showAssessment && !isEditingProfile && (
-          <div className="flex-row gap-2">
-            <button 
-              className={`btn py-2 text-xs flex-1 ${activeTab === 'jobs' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setActiveTab('jobs')}
-            >
-              {t.findJobs}
-            </button>
-            <button 
-              className={`btn py-2 text-xs flex-1 ${activeTab === 'passport' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setActiveTab('passport')}
-            >
-              {t.myPassport}
             </button>
           </div>
         )}
@@ -158,18 +145,75 @@ export const WorkerModule: React.FC<WorkerModuleProps> = ({
                 await api.workers.updateProfile(updatedData);
                 await fetchProfile();
                 setIsEditingProfile(false);
+                setActiveTab('passport');
               } catch (err: any) {
                 alert(err.message || 'Failed to update profile.');
               }
             }}
-            onCancel={() => setIsEditingProfile(false)}
+            onCancel={() => {
+              setIsEditingProfile(false);
+              setActiveTab('passport');
+            }}
           />
         ) : activeTab === 'jobs' ? (
           renderJobFeed()
+        ) : activeTab === 'passport' ? (
+          <SkillPassport profile={profile} language={language} t={t} onEditClick={() => {
+            setIsEditingProfile(true);
+            setActiveTab('profile');
+          }} />
+        ) : activeTab === 'chat' ? (
+          <ChatSection language={language} />
         ) : (
-          <SkillPassport profile={profile} language={language} t={t} onEditClick={() => setIsEditingProfile(true)} />
+          renderJobFeed()
         )}
       </div>
+
+      {/* Fixed Bottom Navigation Bar */}
+      {!showAssessment && (
+        <nav className="bottom-nav">
+          <button 
+            className={`bottom-nav-item ${activeTab === 'jobs' ? 'bottom-nav-item-active' : ''}`}
+            onClick={() => {
+              setActiveTab('jobs');
+              setIsEditingProfile(false);
+            }}
+          >
+            <Briefcase size={20} />
+            <span>{t.findJobs}</span>
+          </button>
+          <button 
+            className={`bottom-nav-item ${activeTab === 'passport' ? 'bottom-nav-item-active' : ''}`}
+            onClick={() => {
+              setActiveTab('passport');
+              setIsEditingProfile(false);
+            }}
+          >
+            <Award size={20} />
+            <span>{t.myPassport}</span>
+          </button>
+          <button 
+            className={`bottom-nav-item ${activeTab === 'chat' ? 'bottom-nav-item-active' : ''}`}
+            onClick={() => {
+              setActiveTab('chat');
+              setIsEditingProfile(false);
+            }}
+          >
+            <MessageSquare size={20} />
+            <span>{t.chatTab}</span>
+          </button>
+          <button 
+            className={`bottom-nav-item ${activeTab === 'profile' || isEditingProfile ? 'bottom-nav-item-active' : ''}`}
+            onClick={() => {
+              setIsEditingProfile(true);
+              setActiveTab('profile');
+            }}
+          >
+            <Settings size={20} />
+            <span>{t.profileTab}</span>
+          </button>
+        </nav>
+      )}
     </>
   );
 };
@@ -914,5 +958,320 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({
         </button>
       </div>
     </form>
+  );
+};
+
+/* ==========================================================================
+   ChatSection Component (Simulated Real-Time Messaging with Employers)
+   ========================================================================== */
+interface ChatSectionProps {
+  language: 'en' | 'hi';
+}
+
+interface Message {
+  sender: 'worker' | 'employer';
+  text: string;
+  time: string;
+}
+
+const ChatSection: React.FC<ChatSectionProps> = ({ language }) => {
+  const [applications, setApplications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedApp, setSelectedApp] = useState<any | null>(null);
+  const [messages, setMessages] = useState<{ [appId: string]: Message[] }>({});
+  const [inputText, setInputText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+
+  const tc = {
+    en: {
+      title: "Active Chats",
+      noChats: "No messages yet. Go to 'Jobs Feed' and apply for jobs to start chatting!",
+      back: "Back",
+      status: "Status",
+      typeMessage: "Type a message...",
+      send: "Send",
+      employerTyping: "Employer is typing...",
+      quickRepliesLabel: "Quick Answers:",
+      quickReplies: ["Yes, I am available", "Where is the work location?", "When can I start?"],
+      defaultResponses: [
+        "Thanks for reaching out! Let's connect tomorrow morning at 10 AM. Does that work?",
+        "I saw your verified Skill Passport. Your test scores look great! Let's arrange a call.",
+        "Could you please share if you have prior experience working in this specific area?",
+        "Got it. Let me discuss with my contractor and I will confirm the details shortly."
+      ]
+    },
+    hi: {
+      title: "सक्रिय बातचीत",
+      noChats: "अभी कोई संदेश नहीं है। बातचीत शुरू करने के लिए 'काम खोजें' और नौकरियों के लिए आवेदन करें!",
+      back: "पीछे",
+      status: "स्थिति",
+      typeMessage: "अपना संदेश लिखें...",
+      send: "भेजें",
+      employerTyping: "नियोक्ता लिख रहे हैं...",
+      quickRepliesLabel: "त्वरित उत्तर:",
+      quickReplies: ["हाँ, मैं उपलब्ध हूँ", "काम का स्थान कहाँ है?", "काम कब से शुरू करना है?"],
+      defaultResponses: [
+        "संपर्क करने के लिए धन्यवाद! हम कल सुबह 10 बजे बात करेंगे। क्या यह समय ठीक है?",
+        "मैंने आपका सत्यापित कौशल पासपोर्ट देखा। आपका स्कोर बहुत अच्छा है! आइए कल बात करें।",
+        "क्या आप इस क्षेत्र में पहले भी काम कर चुके हैं?",
+        "ठीक है। मैं अपने ठेकेदार से बात करके जल्द ही पुष्टि करूँगा।"
+      ]
+    }
+  }[language];
+
+  useEffect(() => {
+    const loadApplications = async () => {
+      try {
+        setLoading(true);
+        const res = await api.jobs.getWorkerApplications();
+        const apps = Array.isArray(res) ? res : res.data || [];
+        setApplications(apps);
+
+        const initialMessages: { [appId: string]: Message[] } = {};
+        apps.forEach((app: any) => {
+          initialMessages[app._id] = [
+            {
+              sender: 'employer',
+              text: language === 'hi' 
+                ? `नमस्ते! हमने ${app.jobId?.title || 'काम'} के लिए आपका आवेदन देखा। आपके कौशल की पुष्टि हो गई है।` 
+                : `Hello! We saw your application for ${app.jobId?.title || 'the job'}. Your verified skills look impressive.`,
+              time: new Date(new Date().getTime() - 1000 * 60 * 10).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }
+          ];
+        });
+        
+        const stored = localStorage.getItem('skillverse_chat_history');
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            const merged = { ...initialMessages };
+            Object.keys(parsed).forEach(key => {
+              if (parsed[key] && parsed[key].length > 0) {
+                merged[key] = parsed[key];
+              }
+            });
+            setMessages(merged);
+          } catch (e) {
+            setMessages(initialMessages);
+          }
+        } else {
+          setMessages(initialMessages);
+        }
+      } catch (err) {
+        console.error("Failed to load worker applications:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadApplications();
+  }, [language]);
+
+  const saveChatHistory = (updatedMessages: { [appId: string]: Message[] }) => {
+    localStorage.setItem('skillverse_chat_history', JSON.stringify(updatedMessages));
+  };
+
+  const handleSendMessage = (textToSend: string) => {
+    if (!selectedApp || !textToSend.trim()) return;
+
+    const appId = selectedApp._id;
+    const userMsg: Message = {
+      sender: 'worker',
+      text: textToSend,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    const currentChat = messages[appId] || [];
+    const updatedChat = [...currentChat, userMsg];
+    
+    const updatedMessages = {
+      ...messages,
+      [appId]: updatedChat
+    };
+
+    setMessages(updatedMessages);
+    saveChatHistory(updatedMessages);
+    setInputText('');
+
+    setIsTyping(true);
+    setTimeout(() => {
+      setIsTyping(false);
+      const responses = tc.defaultResponses;
+      const randomResponse = responses[Math.min(currentChat.length, responses.length - 1)];
+
+      const employerMsg: Message = {
+        sender: 'employer',
+        text: randomResponse,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      const finalChat = [...updatedChat, employerMsg];
+      const finalMessages = {
+        ...messages,
+        [appId]: finalChat
+      };
+      setMessages(finalMessages);
+      saveChatHistory(finalMessages);
+    }, 2000);
+  };
+
+  if (loading) {
+    return (
+      <div className="card text-center items-center py-8">
+        <RefreshCw className="animate-spin text-primary" size={24} />
+        <p className="text-secondary-label mt-2">Loading chats...</p>
+      </div>
+    );
+  }
+
+  if (selectedApp) {
+    const appId = selectedApp._id;
+    const chatHistory = messages[appId] || [];
+
+    return (
+      <div className="flex-column gap-3" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div className="card py-2 px-3 flex-row space-between" style={{ borderBottom: '1.5px solid var(--border-color)', margin: 0 }}>
+          <button className="btn btn-secondary py-1 px-3 text-xs" onClick={() => setSelectedApp(null)}>
+            &larr; {tc.back}
+          </button>
+          <div className="flex-column text-right">
+            <span className="text-white font-bold text-xs">{selectedApp.jobId?.title || "Job Chat"}</span>
+            <span className="text-accent text-[10px]">{tc.status}: {selectedApp.status.toUpperCase()}</span>
+          </div>
+        </div>
+
+        <div 
+          className="flex-column gap-2 p-3 rounded-lg animate-fade-in" 
+          style={{ 
+            height: '320px', 
+            overflowY: 'auto', 
+            background: 'rgba(0,0,0,0.2)',
+            border: '1px solid rgba(255,255,255,0.05)'
+          }}
+        >
+          {chatHistory.map((msg, idx) => (
+            <div 
+              key={idx} 
+              className={`flex-column max-w-[85%] rounded-lg p-2.5 text-xs ${
+                msg.sender === 'worker' 
+                  ? 'self-end bg-primary text-white border-br-none' 
+                  : 'self-start bg-white/5 border border-white/5 text-gray-200 border-bl-none'
+              }`}
+              style={{
+                alignSelf: msg.sender === 'worker' ? 'flex-end' : 'flex-start',
+                backgroundColor: msg.sender === 'worker' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.05)',
+                border: msg.sender === 'worker' ? 'none' : '1px solid rgba(255,255,255,0.05)',
+                borderRadius: '12px',
+                borderBottomRightRadius: msg.sender === 'worker' ? '2px' : '12px',
+                borderBottomLeftRadius: msg.sender === 'employer' ? '2px' : '12px',
+                padding: '10px',
+                maxWidth: '85%'
+              }}
+            >
+              <p className="leading-relaxed">{msg.text}</p>
+              <span className="text-[9px] text-right mt-1 opacity-60 block">{msg.time}</span>
+            </div>
+          ))}
+          
+          {isTyping && (
+            <div 
+              className="bg-white/5 border border-white/5 p-2 rounded-lg text-xs text-muted italic flex-row gap-2 self-start"
+              style={{ alignSelf: 'flex-start', borderRadius: '12px', borderBottomLeftRadius: '2px', padding: '8px 12px' }}
+            >
+              <span className="animate-pulse">{tc.employerTyping}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-column gap-1">
+          <span className="text-[10px] text-muted font-semibold uppercase">{tc.quickRepliesLabel}</span>
+          <div className="flex-row flex-wrap gap-1.5">
+            {tc.quickReplies.map((reply, idx) => (
+              <button 
+                key={idx} 
+                className="btn btn-secondary py-1 px-2.5 text-[10px] rounded-full" 
+                onClick={() => handleSendMessage(reply)}
+                style={{ fontSize: '10px', borderRadius: '9999px', padding: '4px 10px' }}
+              >
+                {reply}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex-row gap-2">
+          <input
+            type="text"
+            className="input-field flex-1 text-xs"
+            placeholder={tc.typeMessage}
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleSendMessage(inputText);
+              }
+            }}
+          />
+          <button 
+            className="btn btn-primary px-4 py-2 text-xs"
+            onClick={() => handleSendMessage(inputText)}
+          >
+            {tc.send}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-column gap-3">
+      <h3 className="text-white font-bold text-base mb-1">{tc.title}</h3>
+      {applications.length === 0 ? (
+        <div className="card text-center p-6 bg-white/5 border border-white/5">
+          <MessageSquare className="text-muted mx-auto mb-2" size={32} />
+          <p className="text-secondary-label text-xs leading-relaxed">{tc.noChats}</p>
+        </div>
+      ) : (
+        <div className="flex-column gap-2">
+          {applications.map((app) => {
+            const hasHistory = messages[app._id] && messages[app._id].length > 0;
+            const lastMsg = hasHistory ? messages[app._id][messages[app._id].length - 1] : null;
+
+            return (
+              <div 
+                key={app._id} 
+                className="card card-interactive p-3 flex-row space-between border hover:border-accent"
+                onClick={() => setSelectedApp(app)}
+                style={{ border: '1px solid var(--border-color)', margin: 0 }}
+              >
+                <div className="flex-column gap-1 text-left flex-1" style={{ marginRight: '12px' }}>
+                  <div className="flex-row gap-2">
+                    <span className="text-white font-bold text-sm">{app.jobId?.title || "Specialty Work"}</span>
+                    <span className={`badge text-[9px] py-0.5 px-1.5 ${
+                      app.status === 'shortlisted' ? 'badge-verified' : 
+                      app.status === 'hired' ? 'bg-success/20 text-success border border-success/30' :
+                      app.status === 'rejected' ? 'bg-danger/20 text-danger border border-danger/30' : 
+                      'bg-white/5 text-secondary border border-white/10'
+                    }`}>
+                      {app.status.toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="text-muted text-[10px]">{app.jobId?.address || "Local Area"}</span>
+                  {lastMsg && (
+                    <span className="text-secondary-label text-xs mt-1 truncate block max-w-[200px]" style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {lastMsg.sender === 'worker' ? 'You: ' : ''}{lastMsg.text}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-column items-end justify-center">
+                  <span className="text-[10px] text-muted">{lastMsg ? lastMsg.time : ''}</span>
+                  <ChevronRight size={16} className="text-accent mt-1" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 };
