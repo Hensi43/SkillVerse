@@ -234,7 +234,7 @@ const SkillPassport: React.FC<SkillPassportProps> = ({ profile, language, t, onE
   return (
     <div className="flex-column gap-4">
       {/* Visual Passport Frame */}
-      <div className="card" style={{
+      <div className="card passport-card" style={{
         background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(17, 24, 39, 0.9) 100%)',
         border: '1.5px solid rgba(255, 255, 255, 0.12)',
         boxShadow: 'var(--shadow-glow)'
@@ -563,7 +563,7 @@ const VoiceAssessment: React.FC<VoiceAssessmentProps> = ({
 
   if (gradingState === 'completed' && gradedResult) {
     return (
-      <div className="card text-center">
+      <div className="card assessment-card text-center">
         <CheckCircle className="text-success mx-auto mb-2" size={48} />
         <h3 className="text-white font-bold text-lg">Test Completed!</h3>
         <p className="text-success text-xs font-semibold uppercase tracking-wider mb-4">
@@ -619,7 +619,7 @@ const VoiceAssessment: React.FC<VoiceAssessmentProps> = ({
   const currentQ = questions[currentIdx];
 
   return (
-    <div className="card">
+    <div className="card assessment-card">
       <div className="flex-row space-between mb-4 pb-2" style={{ borderBottom: '1px solid var(--border-color)' }}>
         <span className="text-accent text-xs font-bold uppercase">Oral Exam ({currentIdx + 1}/{questions.length})</span>
         <button className="text-muted hover:text-white text-xs font-bold" onClick={onClose}>Quit</button>

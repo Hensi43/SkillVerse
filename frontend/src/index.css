@@ -78,6 +78,7 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: 100%;
   max-width: 480px; /* Force premium mobile app frame view on desktop, native on mobile */
   margin: 0 auto;
   background-color: rgba(11, 15, 25, 0.95);
@@ -85,6 +86,7 @@ h1, h2, h3, h4, h5, h6 {
   border-left: 1px solid var(--border-color);
   border-right: 1px solid var(--border-color);
   position: relative;
+  transition: max-width 0.2s ease-in-out;
 }
 
 /* Custom Scrollbar */
@@ -603,3 +605,127 @@ h1, h2, h3, h4, h5, h6 {
 .text-danger { color: var(--danger); }
 .text-accent { color: var(--accent); }
 .text-secondary-label { color: var(--text-secondary); font-size: 14px; }
+
+/* ==========================================================================
+   Premium Responsive Desktop Layout Engine
+   ========================================================================== */
+@media (min-width: 992px) {
+  /* Expand root frame to full desktop dashboard format */
+  #root {
+    max-width: 1200px;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+  }
+
+  /* Transition worker screen to side navigation split grid */
+  #root:has(.bottom-nav) {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "sidebar header"
+      "sidebar main";
+  }
+
+  /* Transform bottom-bar to left dashboard sidebar */
+  #root:has(.bottom-nav) .bottom-nav {
+    grid-area: sidebar;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 260px;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 36px 16px;
+    gap: 12px;
+    border-top: none;
+    border-right: 1px solid var(--border-color);
+    background: rgba(10, 15, 26, 0.98);
+    backdrop-filter: var(--glass-blur);
+    z-index: 99;
+  }
+
+  /* Align icon and text horizontally in sidebar */
+  #root:has(.bottom-nav) .bottom-nav-item {
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 12px 18px;
+    gap: 12px;
+    border-radius: var(--radius-md);
+    width: 100%;
+    height: auto;
+    flex: none;
+    font-size: 13px;
+    color: var(--text-secondary);
+    border: 1px solid transparent;
+  }
+
+  #root:has(.bottom-nav) .bottom-nav-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+  }
+
+  /* Focus indicator for the sidebar tabs */
+  #root:has(.bottom-nav) .bottom-nav-item-active {
+    background: rgba(16, 185, 129, 0.08);
+    color: var(--primary);
+    border: 1px solid rgba(16, 185, 129, 0.15);
+  }
+
+  /* Sidebar labels matching horizontal nav layout */
+  #root:has(.bottom-nav) .bottom-nav-item span {
+    font-size: 13px;
+  }
+
+  #root:has(.bottom-nav) .app-header {
+    grid-area: header;
+    position: sticky;
+    top: 0;
+    z-index: 98;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(8, 12, 20, 0.95);
+  }
+
+  #root:has(.bottom-nav) .app-main {
+    grid-area: main;
+    padding: 30px;
+    padding-bottom: 30px;
+  }
+
+  /* Transform Job Lists into responsive side-by-side grids */
+  .job-feed-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+
+  /* Maintain Passport proportions centered on desktop */
+  .passport-card {
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* Center Voice assessments cards */
+  .assessment-card {
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* Fit login layout cleanly */
+  #root:not(:has(.bottom-nav)) .app-main:has(form) {
+    max-width: 440px;
+    margin: 60px auto;
+    width: 100%;
+  }
+
+  /* Fit role selection layout cleanly */
+  #root:not(:has(.bottom-nav)) .app-main:has(.card-interactive) {
+    max-width: 480px;
+    margin: 60px auto;
+    width: 100%;
+  }
+}
