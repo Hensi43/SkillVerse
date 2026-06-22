@@ -1,6 +1,20 @@
 import { Job, IJob } from '../entities/job';
 import { Application, IApplication } from '../entities/application';
 
+function getDistanceMeters(lon1: number, lat1: number, lon2: number, lat2: number): number {
+  const R = 6371000; // Radius of the earth in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) *
+      Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export interface IJobRepository {
   findById(id: string): Promise<IJob | null>;
   create(jobData: Partial<IJob>): Promise<IJob>;
@@ -34,16 +48,21 @@ export class JobRepository implements IJobRepository {
     maxDistanceMeters: number,
     category?: string
   ): Promise<IJob[]> {
+    const locationNear: any = {
+      $geometry: {
+        type: 'Point',
+        coordinates: [longitude, latitude]
+      }
+    };
+
+    if (maxDistanceMeters >= 0) {
+      locationNear.$maxDistance = maxDistanceMeters;
+    }
+
     const query: any = {
       status: 'open',
       location: {
-        $near: {
-          $geometry: {
-            type: 'Point',
-            coordinates: [longitude, latitude]
-          },
-          $maxDistance: maxDistanceMeters
-        }
+        $near: locationNear
       }
     };
 
@@ -51,7 +70,17 @@ export class JobRepository implements IJobRepository {
       query.tradeCategory = category;
     }
 
-    return Job.find(query).populate('employerId', 'phoneNumber');
+    const jobs = await Job.find(query).populate('employerId', 'phoneNumber').lean();
+
+    const jobsWithDistance = jobs.map((job: any) => {
+      if (job.location && job.location.coordinates) {
+        const [jobLng, jobLat] = job.location.coordinates;
+        job.distance = getDistanceMeters(longitude, latitude, jobLng, jobLat);
+      }
+      return job;
+    });
+
+    return jobsWithDistance as any as IJob[];
   }
 
   async findByEmployerId(employerId: string): Promise<IJob[]> {

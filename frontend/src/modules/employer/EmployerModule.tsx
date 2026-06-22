@@ -8,12 +8,14 @@ import {
 interface EmployerModuleProps {
   user: any;
   language: 'en' | 'hi';
+  setLanguage: (lang: 'en' | 'hi') => void;
   onLogout: () => void;
 }
 
 export const EmployerModule: React.FC<EmployerModuleProps> = ({
   user: _user,
   language,
+  setLanguage,
   onLogout,
 }) => {
   const [view, setView] = useState<'dashboard' | 'post-job' | 'applicants'>('dashboard');
@@ -25,7 +27,7 @@ export const EmployerModule: React.FC<EmployerModuleProps> = ({
   const [selectedJob, setSelectedJob] = useState<any | null>(null);
 
   // Translations
-  const t = {
+  const t: any = {
     en: {
       employerPortal: 'Employer Dashboard',
       postJobBtn: 'Post a New Job',
@@ -34,6 +36,15 @@ export const EmployerModule: React.FC<EmployerModuleProps> = ({
       posted: 'Posted on',
       backBtn: 'Back to Dashboard',
       logout: 'Logout',
+      electrician: 'Electrician',
+      plumber: 'Plumber',
+      carpenter: 'Carpenter',
+      delivery: 'Delivery Partner',
+      driver: 'Driver',
+      housekeeping: 'Housekeeping / Cleaning',
+      mechanic: 'Mechanic',
+      fresher: 'Fresher',
+      other: 'Other',
     },
     hi: {
       employerPortal: 'नियोक्ता डैशबोर्ड',
@@ -43,6 +54,15 @@ export const EmployerModule: React.FC<EmployerModuleProps> = ({
       posted: 'पोस्टिंग तिथि',
       backBtn: 'डैशबोर्ड पर लौटें',
       logout: 'लॉगआउट',
+      electrician: 'इलेक्ट्रीशियन',
+      plumber: 'प्लंबर',
+      carpenter: 'कारपेंटर',
+      delivery: 'डिलीवरी पार्टनर',
+      driver: 'ड्राइवर',
+      housekeeping: 'सफाई / हाउसकीपिंग',
+      mechanic: 'मैकेनिक',
+      fresher: 'फ्रेशर',
+      other: 'अन्य',
     }
   }[language];
 
@@ -67,11 +87,23 @@ export const EmployerModule: React.FC<EmployerModuleProps> = ({
   return (
     <>
       <header className="app-header">
-        <div className="flex-row">
-          <Briefcase className="text-accent" size={20} />
-          <h2 className="text-sm font-bold">{t.employerPortal}</h2>
+        <div className="app-logo">
+          <Briefcase size={22} className="text-accent" />
+          <span>SkillVerse</span>
         </div>
-        <button className="language-pill" onClick={onLogout}>{t.logout}</button>
+        <div className="flex-row gap-3">
+          <span className="text-xs text-secondary-label">{t.employerPortal}</span>
+          <select 
+            className="input-field select-field py-1 px-2 text-xs" 
+            style={{ width: 'auto', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-full)', color: 'var(--text-secondary)' }}
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as 'en' | 'hi')}
+          >
+            <option value="en">English</option>
+            <option value="hi">हिन्दी</option>
+          </select>
+          <button className="language-pill py-1 px-3 text-xs" onClick={onLogout}>{t.logout}</button>
+        </div>
       </header>
 
       <div className="app-main">
@@ -114,7 +146,7 @@ export const EmployerModule: React.FC<EmployerModuleProps> = ({
                   >
                     <div className="flex-row space-between">
                       <h4 className="text-white font-bold text-base">{job.title}</h4>
-                      <span className="badge badge-info">{job.tradeCategory}</span>
+                      <span className="badge badge-info">{t[job.tradeCategory] || job.tradeCategory}</span>
                     </div>
                     <p className="text-secondary-label text-xs line-clamp-2">{job.description}</p>
                     
@@ -191,6 +223,15 @@ const PostJobForm: React.FC<PostJobProps> = ({ language, onSuccess, onCancel }) 
       successGps: 'Location marked!',
       publish: 'Publish Post',
       cancel: 'Cancel',
+      electrician: 'Electrician',
+      plumber: 'Plumber',
+      carpenter: 'Carpenter',
+      delivery: 'Delivery Partner',
+      driver: 'Driver',
+      housekeeping: 'Housekeeping / Cleaning',
+      mechanic: 'Mechanic',
+      fresher: 'Fresher',
+      other: 'Other',
     },
     hi: {
       postJob: 'नौकरी पोस्ट करें',
@@ -204,6 +245,15 @@ const PostJobForm: React.FC<PostJobProps> = ({ language, onSuccess, onCancel }) 
       successGps: 'स्थान दर्ज हो गया!',
       publish: 'नौकरी पोस्ट करें',
       cancel: 'रद्द करें',
+      electrician: 'इलेक्ट्रीशियन (बिजली मिस्त्री)',
+      plumber: 'प्लंबर (नलसाज)',
+      carpenter: 'कारपेंटर (बढ़ई)',
+      delivery: 'डिलीवरी पार्टनर',
+      driver: 'ड्राइवर (चालक)',
+      housekeeping: 'हाउसकीपिंग (सफाई)',
+      mechanic: 'मैकेनिक',
+      fresher: 'फ्रेशर',
+      other: 'अन्य',
     }
   }[language];
 
@@ -298,12 +348,15 @@ const PostJobForm: React.FC<PostJobProps> = ({ language, onSuccess, onCancel }) 
           value={tradeCategory} 
           onChange={(e) => setTradeCategory(e.target.value)}
         >
-          <option value="electrician">Electrician</option>
-          <option value="plumber">Plumber</option>
-          <option value="painter">Painter</option>
-          <option value="carpenter">Carpenter</option>
-          <option value="delivery">Delivery Partner</option>
-          <option value="housekeeping">Housekeeping / Cleaning</option>
+          <option value="electrician">{t.electrician}</option>
+          <option value="plumber">{t.plumber}</option>
+          <option value="carpenter">{t.carpenter}</option>
+          <option value="delivery">{t.delivery}</option>
+          <option value="driver">{t.driver}</option>
+          <option value="housekeeping">{t.housekeeping}</option>
+          <option value="mechanic">{t.mechanic}</option>
+          <option value="fresher">{t.fresher}</option>
+          <option value="other">{t.other}</option>
         </select>
       </div>
 
@@ -393,7 +446,7 @@ const ApplicantPipeline: React.FC<PipelineProps> = ({ job, language, onBack }) =
   const [loadingPassport, setLoadingPassport] = useState(false);
 
   // Translations
-  const t = {
+  const t: any = {
     en: {
       candidates: 'Candidates for',
       noApplicants: 'No applications received yet.',
@@ -403,6 +456,15 @@ const ApplicantPipeline: React.FC<PipelineProps> = ({ job, language, onBack }) =
       viewPassport: 'Inspect Passport',
       pitchIntro: 'Oral Introduction / Pitch',
       badgeTitle: 'Verified Passport Badges',
+      electrician: 'Electrician',
+      plumber: 'Plumber',
+      carpenter: 'Carpenter',
+      delivery: 'Delivery Partner',
+      driver: 'Driver',
+      housekeeping: 'Housekeeping / Cleaning',
+      mechanic: 'Mechanic',
+      fresher: 'Fresher',
+      other: 'Other',
     },
     hi: {
       candidates: 'आवेदन प्राप्त हुए:',
@@ -413,6 +475,15 @@ const ApplicantPipeline: React.FC<PipelineProps> = ({ job, language, onBack }) =
       viewPassport: 'पासपोर्ट जांचें',
       pitchIntro: 'वॉयस इंट्रोडक्शन / पिच',
       badgeTitle: 'पासपोर्ट सत्यापित बैच',
+      electrician: 'इलेक्ट्रीशियन',
+      plumber: 'प्लंबर',
+      carpenter: 'कारपेंटर',
+      delivery: 'डिलीवरी पार्टनर',
+      driver: 'ड्राइवर',
+      housekeeping: 'सफाई / हाउसकीपिंग',
+      mechanic: 'मैकेनिक',
+      fresher: 'फ्रेशर',
+      other: 'अन्य',
     }
   }[language];
 
@@ -508,7 +579,7 @@ const ApplicantPipeline: React.FC<PipelineProps> = ({ job, language, onBack }) =
                 <div className="flex-row space-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>
                   <div className="flex-column">
                     <h4 className="text-white font-bold text-sm">{worker?.fullName || 'Worker'}</h4>
-                    <span className="text-secondary text-[11px]">{worker?.tradeCategory} ({worker?.experienceYears} Years Exp)</span>
+                    <span className="text-secondary text-[11px]">{t[worker?.tradeCategory] || worker?.tradeCategory} ({worker?.experienceYears} {language === 'hi' ? 'वर्ष अनुभव' : 'Years Exp'})</span>
                   </div>
                   <span className={`badge ${statusBadge}`}>{app.status}</span>
                 </div>
@@ -582,27 +653,29 @@ const ApplicantPipeline: React.FC<PipelineProps> = ({ job, language, onBack }) =
               <div className="flex-column gap-3">
                 <div>
                   <h4 className="text-white font-bold text-base">{passportData.fullName}</h4>
-                  <span className="badge badge-verified mt-1">{passportData.tradeCategory.toUpperCase()}</span>
+                  <span className="badge badge-verified mt-1">{(t[passportData.tradeCategory] || passportData.tradeCategory).toUpperCase()}</span>
                 </div>
 
                 <div className="flex-column gap-2 text-xs bg-white/5 p-3 rounded-lg border border-white/5">
                   <div className="flex-row space-between">
-                    <span className="text-secondary">Experience:</span>
-                    <span className="text-white font-bold">{passportData.experienceYears} Years</span>
+                    <span className="text-secondary">{language === 'hi' ? 'अनुभव:' : 'Experience:'}</span>
+                    <span className="text-white font-bold">{passportData.experienceYears} {language === 'hi' ? 'वर्ष' : 'Years'}</span>
                   </div>
                   <div className="flex-row space-between">
-                    <span className="text-secondary">Preferred Languages:</span>
-                    <span className="text-white font-bold">{passportData.languages?.join(', ')}</span>
+                    <span className="text-secondary">{language === 'hi' ? 'पसंदीदा भाषाएं:' : 'Preferred Languages:'}</span>
+                    <span className="text-white font-bold">
+                      {passportData.languages?.map((l: string) => l === 'hi' ? 'हिन्दी' : l === 'en' ? 'English' : l).join(', ')}
+                    </span>
                   </div>
                   <div className="flex-row space-between">
-                    <span className="text-secondary">Location Area:</span>
+                    <span className="text-secondary">{language === 'hi' ? 'काम का स्थान:' : 'Location Area:'}</span>
                     <span className="text-white font-bold">{passportData.address}</span>
                   </div>
                   <div className="flex-row space-between">
-                    <span className="text-secondary">Customer Rating:</span>
+                    <span className="text-secondary">{language === 'hi' ? 'रेटिंग:' : 'Customer Rating:'}</span>
                     <span className="text-accent font-bold flex-row gap-1">
                       <Star size={12} fill="currentColor" />
-                      {passportData.rating?.toFixed(1) || '5.0'} ({passportData.reviewCount || 0} reviews)
+                      {passportData.rating?.toFixed(1) || '5.0'} ({passportData.reviewCount || 0} {language === 'hi' ? 'समीक्षाएं' : 'reviews'})
                     </span>
                   </div>
                 </div>

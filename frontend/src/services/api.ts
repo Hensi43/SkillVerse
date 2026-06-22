@@ -146,7 +146,7 @@ export const api = {
       const query = new URLSearchParams({
         lat: params.lat.toString(),
         lng: params.lng.toString(),
-        radiusKm: (params.radiusKm || 10).toString(),
+        radiusKm: (params.radiusKm !== undefined ? params.radiusKm : 10).toString(),
       });
       if (params.category) {
         query.append('category', params.category);

@@ -1,24 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { 
-  MapPin, Briefcase, IndianRupee, Clock, Navigation, 
-  Mic, Square, Send, CheckCircle, X, ShieldAlert 
+  MapPin, Briefcase, IndianRupee, Clock, ShieldAlert 
 } from 'lucide-react';
 
 interface JobFeedProps {
   language: 'en' | 'hi';
+  workerCoordinates?: [number, number];
 }
 
-export const JobFeed: React.FC<JobFeedProps> = ({ language }) => {
+export const JobFeed: React.FC<JobFeedProps> = ({ language, workerCoordinates }) => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [coords, setCoords] = useState<[number, number] | null>(null);
   const [radiusKm, setRadiusKm] = useState(10);
   const [category, setCategory] = useState<string>('');
-  
-  // Modal State
-  const [selectedJob, setSelectedJob] = useState<any | null>(null);
 
   // Translations
   const t = {
@@ -29,18 +26,22 @@ export const JobFeed: React.FC<JobFeedProps> = ({ language }) => {
       distance: 'away',
       salary: 'Salary',
       type: 'Job Type',
-      applyBtn: 'Quick Apply (Voice)',
+      applyBtn: 'Apply Now',
       appliedBtn: 'Applied',
       noJobs: 'No jobs found in this area. Try expanding your search radius.',
-      locating: 'Locating you...',
+      noRange: 'No Range (All Jobs)',
+      locating: 'Loading jobs near you...',
       gpsRequired: 'Please enable GPS access to see jobs near you.',
       retryGps: 'Access Location',
       electrician: 'Electrician',
       plumber: 'Plumber',
-      painter: 'Painter',
       carpenter: 'Carpenter',
       delivery: 'Delivery Partner',
+      driver: 'Driver',
       housekeeping: 'Housekeeping / Cleaning',
+      mechanic: 'Mechanic',
+      fresher: 'Fresher',
+      other: 'Other',
     },
     hi: {
       findJobs: 'आस-पास के रोजगार',
@@ -49,47 +50,35 @@ export const JobFeed: React.FC<JobFeedProps> = ({ language }) => {
       distance: 'की दूरी पर',
       salary: 'वेतन',
       type: 'कार्य प्रकार',
-      applyBtn: 'जल्दी अप्लाई (आवाज़ से)',
+      applyBtn: 'अप्लाई करें',
       appliedBtn: 'अप्लाई कर दिया',
       noJobs: 'इस क्षेत्र में कोई काम नहीं मिला। खोज का दायरा बढ़ा कर देखें।',
-      locating: 'आपका स्थान खोज रहे हैं...',
+      noRange: 'कोई सीमा नहीं (सभी काम)',
+      locating: 'काम खोज रहे हैं...',
       gpsRequired: 'आस-पास की नौकरियां देखने के लिए कृपया जीपीएस अनुमति दें।',
       retryGps: 'स्थान का पता लगाएं',
       electrician: 'बिजली मिस्त्री',
       plumber: 'नलसाज',
-      painter: 'पेंटर',
       carpenter: 'बढ़ई',
       delivery: 'डिलीवरी पार्टनर',
+      driver: 'ड्राइवर',
       housekeeping: 'सफाई / हाउसकीपिंग',
+      mechanic: 'मैकेनिक',
+      fresher: 'फ्रेशर',
+      other: 'अन्य',
     }
   }[language];
 
-  // Request user coordinates
-  const getUserLocation = () => {
-    setLoading(true);
-    setError('');
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser.');
-      setLoading(false);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCoords([position.coords.longitude, position.coords.latitude]);
-      },
-      () => {
-        // Fallback coordinates: Bangalore MG Road for testing convenience
-        setCoords([77.5946, 12.9716]);
-        setError('Could not access GPS. Displaying fallback Bangalore jobs.');
-      }
-    );
-  };
-
+  // Set coordinates from profile or default to Noida fallback
   useEffect(() => {
-    getUserLocation();
-  }, []);
+    if (workerCoordinates && workerCoordinates.length === 2 && workerCoordinates[0] !== 0) {
+      setCoords(workerCoordinates);
+    } else {
+      setCoords([77.3718, 28.6273]); // Noida Sector 62 fallback coordinates
+    }
+  }, [workerCoordinates]);
 
-  // Fetch jobs once coordinates are fetched
+  // Fetch jobs once coordinates are loaded
   const fetchNearbyJobs = async () => {
     if (!coords) return;
     setLoading(true);
@@ -114,6 +103,19 @@ export const JobFeed: React.FC<JobFeedProps> = ({ language }) => {
     }
   }, [coords, radiusKm, category]);
 
+  const handleApplyDirect = async (jobId: string) => {
+    setLoading(true);
+    setError('');
+    try {
+      await api.jobs.apply(jobId);
+      await fetchNearbyJobs(); // Refresh application status
+    } catch (err: any) {
+      setError(err.message || 'Failed to submit application.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex-column gap-3">
       {/* Search Filter Box */}
@@ -131,6 +133,7 @@ export const JobFeed: React.FC<JobFeedProps> = ({ language }) => {
             <option value={10}>10 Km</option>
             <option value={20}>20 Km</option>
             <option value={50}>50 Km</option>
+            <option value={-1}>{t.noRange}</option>
           </select>
         </div>
 
@@ -144,10 +147,13 @@ export const JobFeed: React.FC<JobFeedProps> = ({ language }) => {
             <option value="">{t.categoryAll}</option>
             <option value="electrician">{t.electrician}</option>
             <option value="plumber">{t.plumber}</option>
-            <option value="painter">{t.painter}</option>
             <option value="carpenter">{t.carpenter}</option>
             <option value="delivery">{t.delivery}</option>
+            <option value="driver">{t.driver}</option>
             <option value="housekeeping">{t.housekeeping}</option>
+            <option value="mechanic">{t.mechanic}</option>
+            <option value="fresher">{t.fresher}</option>
+            <option value="other">{t.other}</option>
           </select>
         </div>
       </div>
@@ -156,17 +162,6 @@ export const JobFeed: React.FC<JobFeedProps> = ({ language }) => {
         <div className="text-accent bg-amber-950/20 border border-amber-900/30 p-3 rounded-lg text-xs flex-row">
           <ShieldAlert size={16} />
           <span>{error}</span>
-        </div>
-      )}
-
-      {/* Geolocation missing prompts */}
-      {!coords && !loading && (
-        <div className="card text-center py-6">
-          <Navigation className="text-muted mx-auto mb-2" size={32} />
-          <p className="text-secondary-label text-sm mb-4">{t.gpsRequired}</p>
-          <button className="btn btn-primary text-xs py-2 w-auto mx-auto" onClick={getUserLocation}>
-            {t.retryGps}
-          </button>
         </div>
       )}
 
@@ -194,23 +189,10 @@ export const JobFeed: React.FC<JobFeedProps> = ({ language }) => {
               job={job} 
               language={language}
               t={t}
-              onApplyClick={() => setSelectedJob(job)} 
+              onApplyClick={handleApplyDirect} 
             />
           ))}
         </div>
-      )}
-
-      {/* Quick Apply Dialog */}
-      {selectedJob && (
-        <QuickApplyModal 
-          job={selectedJob} 
-          language={language}
-          onClose={() => setSelectedJob(null)}
-          onSuccess={() => {
-            setSelectedJob(null);
-            fetchNearbyJobs(); // Refresh application status indicators
-          }}
-        />
       )}
     </div>
   );
@@ -223,7 +205,7 @@ interface JobCardProps {
   job: any;
   language: 'en' | 'hi';
   t: any;
-  onApplyClick: () => void;
+  onApplyClick: (jobId: string) => void;
 }
 
 const JobCard: React.FC<JobCardProps> = ({ job, language: _language, t, onApplyClick }) => {
@@ -266,198 +248,9 @@ const JobCard: React.FC<JobCardProps> = ({ job, language: _language, t, onApplyC
             {t.appliedBtn}
           </button>
         ) : (
-          <button className="btn btn-primary py-2 text-xs" onClick={onApplyClick}>
+          <button className="btn btn-primary py-2 text-xs" onClick={() => onApplyClick(job._id)}>
             {t.applyBtn}
           </button>
-        )}
-      </div>
-    </div>
-  );
-};
-
-/* ==========================================================================
-   QuickApplyModal (Voice Pitch Application Overlay)
-   ========================================================================== */
-interface QuickApplyProps {
-  job: any;
-  language: 'en' | 'hi';
-  onClose: () => void;
-  onSuccess: () => void;
-}
-
-const QuickApplyModal: React.FC<QuickApplyProps> = ({
-  job,
-  language,
-  onClose,
-  onSuccess,
-}) => {
-  const [recording, setRecording] = useState(false);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-
-  const t = {
-    en: {
-      applyTitle: 'Quick Apply via Voice',
-      jobLabel: 'Applying for:',
-      instruction: 'Instead of writing a resume, record a 20-30 second oral introduction explaining your experience and why you are suitable.',
-      recordBtn: 'Record Voice Note',
-      stopBtn: 'Stop Recording',
-      sendBtn: 'Submit Pitch Application',
-      successMsg: 'Application submitted successfully!',
-      errorHead: 'Error',
-      closeBtn: 'Close',
-    },
-    hi: {
-      applyTitle: 'आवाज़ से जल्दी अप्लाई करें',
-      jobLabel: 'नौकरी का नाम:',
-      instruction: 'बिना कोई रेज़्युमे बनाए, २०-३० सेकंड की रिकॉर्डिंग में अपना अनुभव समझाएं और बताएं कि आप यह काम क्यों करना चाहते हैं।',
-      recordBtn: 'आवाज़ रिकॉर्ड करें',
-      stopBtn: 'रिकॉर्डिंग बंद करें',
-      sendBtn: 'आवेदन जमा करें',
-      successMsg: 'आपका आवेदन सफलतापूर्वक जमा हो गया है!',
-      errorHead: 'त्रुटि',
-      closeBtn: 'बंद करें',
-    }
-  }[language];
-
-  // Start Audio Recording
-  const startRecording = async () => {
-    audioChunksRef.current = [];
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        setAudioBlob(audioBlob);
-        setAudioUrl(URL.createObjectURL(audioBlob));
-        stream.getTracks().forEach((track) => track.stop());
-      };
-
-      mediaRecorder.start();
-      setRecording(true);
-      setError('');
-    } catch (err) {
-      setError('Microphone access denied. Enable permissions in your browser.');
-    }
-  };
-
-  // Stop Audio Recording
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && recording) {
-      mediaRecorderRef.current.stop();
-      setRecording(false);
-    }
-  };
-
-  // Submit application
-  const handleSubmit = async () => {
-    if (!audioBlob) {
-      setError('Please record a voice intro before submitting.');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      await api.jobs.apply(job._id, audioBlob);
-      setSuccess(true);
-    } catch (err: any) {
-      setError(err.message || 'Hiring portal application failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <div className="flex-row space-between" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-          <h3 className="text-white font-bold text-base">{t.applyTitle}</h3>
-          <button className="text-muted hover:text-white" onClick={onClose}>
-            <X size={18} />
-          </button>
-        </div>
-
-        {error && (
-          <div className="text-danger bg-red-950/20 p-2 rounded text-xs text-center">
-            <strong>{t.errorHead}: </strong> {error}
-          </div>
-        )}
-
-        {success ? (
-          <div className="text-center py-4">
-            <CheckCircle className="text-success mx-auto mb-2" size={40} />
-            <p className="text-white font-semibold text-sm mb-4">{t.successMsg}</p>
-            <button className="btn btn-primary" onClick={onSuccess}>
-              {t.closeBtn}
-            </button>
-          </div>
-        ) : (
-          <div className="flex-column gap-3">
-            <div>
-              <span className="text-secondary-label text-xs">{t.jobLabel}</span>
-              <h4 className="text-accent font-bold text-sm">{job.title}</h4>
-            </div>
-
-            <p className="text-secondary-label text-xs leading-relaxed">
-              {t.instruction}
-            </p>
-
-            {/* Visual audio wave bouncing */}
-            <div className="voice-wave">
-              <div className={`voice-wave-bar ${recording ? 'voice-wave-bar-recording' : ''}`}></div>
-              <div className={`voice-wave-bar ${recording ? 'voice-wave-bar-recording' : ''}`}></div>
-              <div className={`voice-wave-bar ${recording ? 'voice-wave-bar-recording' : ''}`}></div>
-              <div className={`voice-wave-bar ${recording ? 'voice-wave-bar-recording' : ''}`}></div>
-              <div className={`voice-wave-bar ${recording ? 'voice-wave-bar-recording' : ''}`}></div>
-            </div>
-
-            {/* Audio recorder buttons */}
-            <div className="mic-btn-container" style={{ margin: '10px 0' }}>
-              {recording ? (
-                <button className="mic-btn mic-btn-recording" onClick={stopRecording}>
-                  <Square size={20} className="text-white" />
-                </button>
-              ) : (
-                <button className="mic-btn" onClick={startRecording}>
-                  <Mic size={24} className="text-white" />
-                </button>
-              )}
-              <span className="text-muted text-xs">
-                {recording ? t.stopBtn : t.recordBtn}
-              </span>
-            </div>
-
-            {audioUrl && (
-              <div className="audio-player-card">
-                <audio src={audioUrl} controls style={{ width: '100%' }} />
-              </div>
-            )}
-
-            {audioBlob && (
-              <button 
-                className={`btn btn-primary flex-row justify-center mt-2 ${loading ? 'btn-disabled' : ''}`}
-                onClick={handleSubmit}
-                disabled={loading}
-              >
-                <Send size={16} />
-                <span>{loading ? '...' : t.sendBtn}</span>
-              </button>
-            )}
-          </div>
         )}
       </div>
     </div>

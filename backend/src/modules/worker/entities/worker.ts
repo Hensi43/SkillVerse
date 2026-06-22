@@ -19,6 +19,7 @@ export interface IWorker extends Document {
   address?: string;
   tradeCategory: 'electrician' | 'plumber' | 'carpenter' | 'delivery' | 'driver' | 'housekeeping' | 'mechanic' | 'fresher' | 'other';
   currentSalaryEst?: number;
+  age?: number;
   languages: string[];
   skills: string[];
   experienceYears: number;
@@ -77,6 +78,9 @@ const WorkerSchema = new Schema<IWorker>(
       required: true 
     },
     currentSalaryEst: { 
+      type: Number 
+    },
+    age: { 
       type: Number 
     },
     languages: { 

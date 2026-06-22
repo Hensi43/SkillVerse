@@ -1,30 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { 
   User, Award, Star, Languages, Clock, MapPin, 
-  Mic, Square, RefreshCw, CheckCircle, ArrowRight, Download,
+  RefreshCw, Download,
   Briefcase, MessageSquare, Settings, ChevronRight
 } from 'lucide-react';
 
 interface WorkerModuleProps {
   user: any;
   language: 'en' | 'hi';
+  setLanguage: (lang: 'en' | 'hi') => void;
   onLogout: () => void;
   // Shared nearby job feed render helper
-  renderJobFeed: () => React.ReactNode;
+  renderJobFeed: (coords?: [number, number]) => React.ReactNode;
 }
 
 export const WorkerModule: React.FC<WorkerModuleProps> = ({
   user: _user,
   language,
+  setLanguage,
   onLogout,
   renderJobFeed,
 }) => {
   const [activeTab, setActiveTab] = useState<'jobs' | 'passport' | 'chat' | 'profile'>('jobs');
   const [profile, setProfile] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [showAssessment, setShowAssessment] = useState(false);
-  const [_assessmentResult, setAssessmentResult] = useState<any>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   // Translations dictionary
@@ -45,10 +45,19 @@ export const WorkerModule: React.FC<WorkerModuleProps> = ({
       languages: 'Languages',
       location: 'Location',
       downloadPdf: 'Download PDF Passport',
-      noBadges: 'No badges yet. Take the voice test to earn your first badge.',
+      noBadges: 'No badges yet.',
       rating: 'Rating',
       joined: 'Joined',
       logout: 'Logout',
+      electrician: 'Electrician',
+      plumber: 'Plumber',
+      carpenter: 'Carpenter',
+      delivery: 'Delivery Partner',
+      driver: 'Driver',
+      housekeeping: 'Housekeeping / Cleaning',
+      mechanic: 'Mechanic',
+      fresher: 'Fresher',
+      other: 'Other',
     },
     hi: {
       welcome: 'स्वागत है,',
@@ -66,10 +75,19 @@ export const WorkerModule: React.FC<WorkerModuleProps> = ({
       languages: 'भाषाएं',
       location: 'स्थान',
       downloadPdf: 'पीडीएफ पासपोर्ट डाउनलोड करें',
-      noBadges: 'कोई बैच नहीं है। बैच कमाने के लिए वॉयस टेस्ट दें।',
+      noBadges: 'कोई बैच नहीं है।',
       rating: 'रेटिंग',
       joined: 'सदस्यता तिथि',
       logout: 'लॉगआउट',
+      electrician: 'इलेक्ट्रीशियन',
+      plumber: 'प्लंबर',
+      carpenter: 'कारपेंटर',
+      delivery: 'डिलीवरी पार्टनर',
+      driver: 'ड्राइवर',
+      housekeeping: 'सफाई / हाउसकीपिंग',
+      mechanic: 'मैकेनिक',
+      fresher: 'फ्रेशर',
+      other: 'अन्य',
     }
   }[language];
 
@@ -102,44 +120,24 @@ export const WorkerModule: React.FC<WorkerModuleProps> = ({
   return (
     <>
       <header className="app-header">
-        <div className="flex-row">
-          <User className="text-primary" size={20} />
-          <h2 className="text-sm font-bold">{t.welcome} {profile?.fullName || 'Worker'}</h2>
+        <div className="app-logo">
+          <Briefcase size={22} className="text-primary" />
+          <span>SkillVerse</span>
         </div>
-        <button className="language-pill" onClick={onLogout}>{t.logout}</button>
+        <div className="flex-row gap-3">
+          <span className="text-xs text-secondary-label">{t.welcome} {profile?.fullName || 'Worker'}</span>
+          <button className="language-pill py-1 px-3 text-xs" onClick={onLogout}>{t.logout}</button>
+        </div>
       </header>
 
       {/* Main Scrolling View */}
       <div className="app-main">
-        {/* Verification banner if no badges */}
-        {profile && (!profile.verifiedBadges || profile.verifiedBadges.length === 0) && !showAssessment && !isEditingProfile && activeTab === 'passport' && (
-          <div className="card border-accent" style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(22, 28, 45, 0.7) 100%)' }}>
-            <div className="flex-row mb-2">
-              <Award className="text-accent" size={24} />
-              <h3 className="text-white text-sm font-bold">Earn Badge</h3>
-            </div>
-            <p className="text-secondary-label text-xs mb-3">{t.assessmentAlert}</p>
-            <button className="btn btn-primary btn-success py-2 text-xs" onClick={() => setShowAssessment(true)}>
-              {t.takeAssessmentBtn}
-            </button>
-          </div>
-        )}
-
         {/* Tab contents */}
-        {showAssessment ? (
-          <VoiceAssessment 
-            profile={profile} 
-            language={language}
-            onComplete={(result) => {
-              setAssessmentResult(result);
-              fetchProfile(); // Reload profile with new badges/skills
-            }}
-            onClose={() => setShowAssessment(false)} 
-          />
-        ) : isEditingProfile ? (
+        {isEditingProfile ? (
           <EditProfileForm
             profile={profile}
             language={language}
+            setLanguage={setLanguage}
             onSave={async (updatedData) => {
               try {
                 await api.workers.updateProfile(updatedData);
@@ -156,7 +154,7 @@ export const WorkerModule: React.FC<WorkerModuleProps> = ({
             }}
           />
         ) : activeTab === 'jobs' ? (
-          renderJobFeed()
+          renderJobFeed(profile?.location?.coordinates)
         ) : activeTab === 'passport' ? (
           <SkillPassport profile={profile} language={language} t={t} onEditClick={() => {
             setIsEditingProfile(true);
@@ -165,55 +163,53 @@ export const WorkerModule: React.FC<WorkerModuleProps> = ({
         ) : activeTab === 'chat' ? (
           <ChatSection language={language} />
         ) : (
-          renderJobFeed()
+          renderJobFeed(profile?.location?.coordinates)
         )}
       </div>
 
       {/* Fixed Bottom Navigation Bar */}
-      {!showAssessment && (
-        <nav className="bottom-nav">
-          <button 
-            className={`bottom-nav-item ${activeTab === 'jobs' ? 'bottom-nav-item-active' : ''}`}
-            onClick={() => {
-              setActiveTab('jobs');
-              setIsEditingProfile(false);
-            }}
-          >
-            <Briefcase size={20} />
-            <span>{t.findJobs}</span>
-          </button>
-          <button 
-            className={`bottom-nav-item ${activeTab === 'passport' ? 'bottom-nav-item-active' : ''}`}
-            onClick={() => {
-              setActiveTab('passport');
-              setIsEditingProfile(false);
-            }}
-          >
-            <Award size={20} />
-            <span>{t.myPassport}</span>
-          </button>
-          <button 
-            className={`bottom-nav-item ${activeTab === 'chat' ? 'bottom-nav-item-active' : ''}`}
-            onClick={() => {
-              setActiveTab('chat');
-              setIsEditingProfile(false);
-            }}
-          >
-            <MessageSquare size={20} />
-            <span>{t.chatTab}</span>
-          </button>
-          <button 
-            className={`bottom-nav-item ${activeTab === 'profile' || isEditingProfile ? 'bottom-nav-item-active' : ''}`}
-            onClick={() => {
-              setIsEditingProfile(true);
-              setActiveTab('profile');
-            }}
-          >
-            <Settings size={20} />
-            <span>{t.profileTab}</span>
-          </button>
-        </nav>
-      )}
+      <nav className="bottom-nav">
+        <button 
+          className={`bottom-nav-item ${activeTab === 'jobs' ? 'bottom-nav-item-active' : ''}`}
+          onClick={() => {
+            setActiveTab('jobs');
+            setIsEditingProfile(false);
+          }}
+        >
+          <Briefcase size={20} />
+          <span>{t.findJobs}</span>
+        </button>
+        <button 
+          className={`bottom-nav-item ${activeTab === 'passport' ? 'bottom-nav-item-active' : ''}`}
+          onClick={() => {
+            setActiveTab('passport');
+            setIsEditingProfile(false);
+          }}
+        >
+          <Award size={20} />
+          <span>{t.myPassport}</span>
+        </button>
+        <button 
+          className={`bottom-nav-item ${activeTab === 'chat' ? 'bottom-nav-item-active' : ''}`}
+          onClick={() => {
+            setActiveTab('chat');
+            setIsEditingProfile(false);
+          }}
+        >
+          <MessageSquare size={20} />
+          <span>{t.chatTab}</span>
+        </button>
+        <button 
+          className={`bottom-nav-item ${activeTab === 'profile' || isEditingProfile ? 'bottom-nav-item-active' : ''}`}
+          onClick={() => {
+            setIsEditingProfile(true);
+            setActiveTab('profile');
+          }}
+        >
+          <Settings size={20} />
+          <span>{t.profileTab}</span>
+        </button>
+      </nav>
     </>
   );
 };
@@ -246,7 +242,7 @@ const SkillPassport: React.FC<SkillPassportProps> = ({ profile, language, t, onE
             <h2 className="text-white font-bold text-xl">{profile.fullName}</h2>
           </div>
           <div className="badge badge-verified">
-            {profile.tradeCategory.toUpperCase()}
+            {(t[profile.tradeCategory] || profile.tradeCategory).toUpperCase()}
           </div>
         </div>
 
@@ -257,7 +253,7 @@ const SkillPassport: React.FC<SkillPassportProps> = ({ profile, language, t, onE
               <Clock size={16} />
               <span>{t.experience}</span>
             </div>
-            <span className="font-bold text-white">{profile.experienceYears} Years</span>
+            <span className="font-bold text-white">{profile.experienceYears} {language === 'hi' ? 'वर्ष' : 'Years'}</span>
           </div>
 
           <div className="flex-row space-between text-sm">
@@ -265,7 +261,9 @@ const SkillPassport: React.FC<SkillPassportProps> = ({ profile, language, t, onE
               <Languages size={16} />
               <span>{t.languages}</span>
             </div>
-            <span className="font-bold text-white">{profile.languages.join(', ')}</span>
+            <span className="font-bold text-white">
+              {profile.languages.map((l: string) => l === 'hi' ? 'हिन्दी' : l === 'en' ? 'English' : l).join(', ')}
+            </span>
           </div>
 
           <div className="flex-row space-between text-sm">
@@ -357,8 +355,12 @@ const SkillPassport: React.FC<SkillPassportProps> = ({ profile, language, t, onE
             <rect x="84" y="80" width="8" height="8" fill="black" />
           </svg>
           <div className="flex-column text-left">
-            <span className="text-white font-bold text-xs">Verify Profile</span>
-            <span className="text-muted text-[10px]">Scan QR to view worker experience & verification certificates</span>
+            <span className="text-white font-bold text-xs">{language === 'hi' ? 'प्रोफ़ाइल सत्यापित करें' : 'Verify Profile'}</span>
+            <span className="text-muted text-[10px]">
+              {language === 'hi' 
+                ? 'अनुभव वर्ष और कौशल प्रमाण-पत्र देखने के लिए क्यूआर कोड स्कैन करें' 
+                : 'Scan QR to view worker experience & verification certificates'}
+            </span>
           </div>
         </div>
       </div>
@@ -378,317 +380,12 @@ const SkillPassport: React.FC<SkillPassportProps> = ({ profile, language, t, onE
 };
 
 /* ==========================================================================
-   VoiceAssessment Component (Audio Quiz & AI Evaluation Polling)
-   ========================================================================== */
-interface VoiceAssessmentProps {
-  profile: any;
-  language: 'en' | 'hi';
-  onComplete: (result: any) => void;
-  onClose: () => void;
-}
-
-const VoiceAssessment: React.FC<VoiceAssessmentProps> = ({
-  profile,
-  language,
-  onComplete,
-  onClose,
-}) => {
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [loadingQuestions, setLoadingQuestions] = useState(true);
-  
-  // Audio state
-  const [recording, setRecording] = useState(false);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [answers, setAnswers] = useState<Array<{ questionId: string; questionText: string; blob: Blob }>>([]);
-  
-  // Submission & Polling
-  const [gradingState, setGradingState] = useState<'idle' | 'submitting' | 'polling' | 'completed' | 'failed'>('idle');
-  const [gradedResult, setGradedResult] = useState<any>(null);
-  const [error, setError] = useState('');
-  
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-
-  // Load questions based on trade and language
-  useEffect(() => {
-    const fetchQuestions = async () => {
-      try {
-        setLoadingQuestions(true);
-        const res = await api.assessment.getQuestions(profile.tradeCategory, language);
-        setQuestions(res.data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load assessment questions.');
-      } finally {
-        setLoadingQuestions(false);
-      }
-    };
-    fetchQuestions();
-  }, [profile.tradeCategory, language]);
-
-  // Start Audio Recording
-  const startRecording = async () => {
-    audioChunksRef.current = [];
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        setAudioBlob(audioBlob);
-        setAudioUrl(URL.createObjectURL(audioBlob));
-        // Stop all tracks on the stream to release mic icon
-        stream.getTracks().forEach((track) => track.stop());
-      };
-
-      mediaRecorder.start();
-      setRecording(true);
-      setError('');
-    } catch (err: any) {
-      setError('Microphone access denied. Please allow microphone permissions.');
-    }
-  };
-
-  // Stop Audio Recording
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && recording) {
-      mediaRecorderRef.current.stop();
-      setRecording(false);
-    }
-  };
-
-  // Save answer and move to next question
-  const saveAnswer = () => {
-    if (!audioBlob) return;
-    
-    const currentQ = questions[currentIdx];
-    const newAnswer = {
-      questionId: currentQ.id,
-      questionText: currentQ.text,
-      blob: audioBlob
-    };
-    
-    setAnswers([...answers, newAnswer]);
-    setAudioBlob(null);
-    setAudioUrl(null);
-    
-    if (currentIdx < questions.length - 1) {
-      setCurrentIdx(currentIdx + 1);
-    } else {
-      // Last answer recorded, trigger submit
-      submitAnswers([...answers, newAnswer]);
-    }
-  };
-
-  // Submit all recordings to the backend
-  const submitAnswers = async (finalAnswers: any[]) => {
-    setGradingState('submitting');
-    setError('');
-    try {
-      const res = await api.assessment.submit(
-        profile.tradeCategory,
-        language,
-        finalAnswers
-      );
-      
-      const assessmentId = res.data.assessmentId;
-      startPollingStatus(assessmentId);
-    } catch (err: any) {
-      setError(err.message || 'Submission failed.');
-      setGradingState('idle');
-    }
-  };
-
-  // Poll status of evaluation
-  const startPollingStatus = (assessmentId: string) => {
-    setGradingState('polling');
-    const interval = setInterval(async () => {
-      try {
-        const res = await api.assessment.getStatus(assessmentId);
-        const assessment = res.data;
-        
-        if (assessment.status === 'completed') {
-          clearInterval(interval);
-          setGradedResult(assessment);
-          setGradingState('completed');
-          onComplete(assessment);
-        } else if (assessment.status === 'failed') {
-          clearInterval(interval);
-          setError(assessment.feedback || 'AI assessment grading failed.');
-          setGradingState('failed');
-        }
-      } catch (err) {
-        // Log error and retry
-        console.error('Polling error:', err);
-      }
-    }, 2000);
-  };
-
-  if (loadingQuestions) {
-    return (
-      <div className="card text-center items-center py-8">
-        <RefreshCw className="animate-spin text-primary" size={24} />
-        <p className="text-secondary-label mt-2">Fetching oral questions...</p>
-      </div>
-    );
-  }
-
-  if (gradingState === 'submitting') {
-    return (
-      <div className="card text-center py-8">
-        <RefreshCw className="animate-spin text-primary mx-auto" size={28} />
-        <h3 className="text-white font-bold mt-3">Uploading audio answers</h3>
-        <p className="text-muted text-xs mt-1">Uploading high-fidelity voice profiles for assessment...</p>
-      </div>
-    );
-  }
-
-  if (gradingState === 'polling') {
-    return (
-      <div className="card text-center py-8">
-        <RefreshCw className="animate-spin text-accent mx-auto" size={28} />
-        <h3 className="text-white font-bold mt-3">AI Engine Grading Answers</h3>
-        <p className="text-muted text-xs mt-1">Transcribing speech and grading technical concept accuracy...</p>
-      </div>
-    );
-  }
-
-  if (gradingState === 'completed' && gradedResult) {
-    return (
-      <div className="card assessment-card text-center">
-        <CheckCircle className="text-success mx-auto mb-2" size={48} />
-        <h3 className="text-white font-bold text-lg">Test Completed!</h3>
-        <p className="text-success text-xs font-semibold uppercase tracking-wider mb-4">
-          Badge Awarded: {gradedResult.badgeAwarded}
-        </p>
-
-        {/* Scores details */}
-        <div className="flex-column gap-3 mb-4 bg-white/5 p-3 rounded-lg text-left">
-          <div className="flex-column gap-1">
-            <div className="flex-row space-between text-xs font-semibold text-secondary">
-              <span>Technical Accuracy</span>
-              <span className="text-success">{gradedResult.scores?.accuracy}%</span>
-            </div>
-            <div className="score-progress-bar">
-              <div className="score-progress-fill" style={{ width: `${gradedResult.scores?.accuracy}%` }}></div>
-            </div>
-          </div>
-
-          <div className="flex-column gap-1">
-            <div className="flex-row space-between text-xs font-semibold text-secondary">
-              <span>Speech Fluency</span>
-              <span className="text-success">{gradedResult.scores?.fluency}%</span>
-            </div>
-            <div className="score-progress-bar">
-              <div className="score-progress-fill" style={{ width: `${gradedResult.scores?.fluency}%` }}></div>
-            </div>
-          </div>
-
-          <div className="flex-column gap-1">
-            <div className="flex-row space-between text-xs font-semibold text-secondary">
-              <span>Domain Knowledge</span>
-              <span className="text-success">{gradedResult.scores?.knowledge}%</span>
-            </div>
-            <div className="score-progress-bar">
-              <div className="score-progress-fill" style={{ width: `${gradedResult.scores?.knowledge}%` }}></div>
-            </div>
-          </div>
-        </div>
-
-        {/* AI Feedback */}
-        <div className="text-left bg-black/40 p-3 rounded-lg border border-white/5 mb-4">
-          <h4 className="text-accent font-bold text-xs uppercase mb-1">AI Assessor Review</h4>
-          <p className="text-secondary-label text-xs leading-relaxed">{gradedResult.feedback}</p>
-        </div>
-
-        <button className="btn btn-primary" onClick={onClose}>
-          Return to Dashboard
-        </button>
-      </div>
-    );
-  }
-
-  const currentQ = questions[currentIdx];
-
-  return (
-    <div className="card assessment-card">
-      <div className="flex-row space-between mb-4 pb-2" style={{ borderBottom: '1px solid var(--border-color)' }}>
-        <span className="text-accent text-xs font-bold uppercase">Oral Exam ({currentIdx + 1}/{questions.length})</span>
-        <button className="text-muted hover:text-white text-xs font-bold" onClick={onClose}>Quit</button>
-      </div>
-
-      {error && (
-        <div className="text-danger bg-red-950/20 p-2 rounded text-xs text-center mb-3">
-          {error}
-        </div>
-      )}
-
-      {currentQ && (
-        <div className="text-center">
-          <h3 className="text-white font-bold text-base mb-6 leading-relaxed" style={{ minHeight: '60px' }}>
-            "{currentQ.text}"
-          </h3>
-
-          {/* Voice Waves */}
-          <div className="voice-wave">
-            <div className={`voice-wave-bar ${recording ? 'voice-wave-bar-recording' : ''}`}></div>
-            <div className={`voice-wave-bar ${recording ? 'voice-wave-bar-recording' : ''}`}></div>
-            <div className={`voice-wave-bar ${recording ? 'voice-wave-bar-recording' : ''}`}></div>
-            <div className={`voice-wave-bar ${recording ? 'voice-wave-bar-recording' : ''}`}></div>
-            <div className={`voice-wave-bar ${recording ? 'voice-wave-bar-recording' : ''}`}></div>
-            <div className={`voice-wave-bar ${recording ? 'voice-wave-bar-recording' : ''}`}></div>
-          </div>
-
-          {/* Controls */}
-          <div className="mic-btn-container">
-            {recording ? (
-              <button className="mic-btn mic-btn-recording" onClick={stopRecording}>
-                <Square size={24} className="text-white" />
-              </button>
-            ) : (
-              <button className="mic-btn" onClick={startRecording}>
-                <Mic size={28} className="text-white" />
-              </button>
-            )}
-            <span className="text-secondary text-xs">
-              {recording ? 'Tap to STOP speaking' : 'Tap to RECORD your answer'}
-            </span>
-          </div>
-
-          {/* Recorded playback */}
-          {audioUrl && (
-            <div className="audio-player-card">
-              <audio src={audioUrl} controls style={{ width: '100%' }} />
-            </div>
-          )}
-
-          {/* Navigation Action */}
-          {audioBlob && (
-            <button className="btn btn-success flex-row justify-center mt-4" onClick={saveAnswer}>
-              <span>{currentIdx < questions.length - 1 ? 'Save & Next Question' : 'Submit Oral Answers'}</span>
-              <ArrowRight size={16} />
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-/* ==========================================================================
    EditProfileForm Component
    ========================================================================== */
 interface EditProfileFormProps {
   profile: any;
   language: 'en' | 'hi';
+  setLanguage: (lang: 'en' | 'hi') => void;
   onSave: (data: any) => Promise<void>;
   onCancel: () => void;
 }
@@ -696,97 +393,54 @@ interface EditProfileFormProps {
 const EditProfileForm: React.FC<EditProfileFormProps> = ({
   profile,
   language,
+  setLanguage,
   onSave,
   onCancel,
 }) => {
   const [fullName, setFullName] = useState(profile?.fullName || '');
-  const [gender, setGender] = useState(profile?.gender || 'male');
   const [tradeCategory, setTradeCategory] = useState(profile?.tradeCategory || 'electrician');
-  const [experienceYears, setExperienceYears] = useState(profile?.experienceYears?.toString() || '2');
+  const [age, setAge] = useState(profile?.age?.toString() || '');
+  const [currentSalaryEst, setCurrentSalaryEst] = useState(profile?.currentSalaryEst?.toString() || '');
   const [address, setAddress] = useState(profile?.address || '');
-  const [coords, setCoords] = useState<[number, number] | null>(profile?.location?.coordinates || null);
-  const [locationStatus, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>(profile?.location ? 'success' : 'idle');
-  const [skills, setSkills] = useState<string[]>(profile?.skills || []);
-  const [skillInput, setSkillInput] = useState('');
+  const [preferredLanguage, setPreferredLanguage] = useState<'en' | 'hi'>(language);
   const [saving, setSaving] = useState(false);
-
-  const handleAddSkill = () => {
-    const trimmed = skillInput.trim();
-    if (trimmed && !skills.includes(trimmed)) {
-      setSkills([...skills, trimmed]);
-      setSkillInput('');
-    }
-  };
-
-  const handleRemoveSkill = (skillToRemove: string) => {
-    setSkills(skills.filter(s => s !== skillToRemove));
-  };
 
   const t = {
     en: {
-      editTitle: 'Edit Worker Profile',
-      fullName: 'Full Name',
-      genderLabel: 'Gender',
-      male: 'Male',
-      female: 'Female',
-      other: 'Other',
-      tradeLabel: 'Trade / Specialty',
-      experienceLabel: 'Experience (Years)',
+      editTitle: 'Edit Settings & Profile',
+      fullName: 'First Name / Full Name',
+      tradeLabel: 'Occupation',
       addressLabel: 'Work Address / Area',
-      locationBtn: 'Detect Work Location (GPS)',
-      locationFetching: 'Accessing GPS...',
-      locationSuccess: 'Location verified!',
-      locationError: 'GPS Access Failed',
       saveBtn: 'Save Changes',
       cancelBtn: 'Cancel',
       electrician: 'Electrician',
       plumber: 'Plumber',
-      painter: 'Painter',
       carpenter: 'Carpenter',
       delivery: 'Delivery Partner',
+      driver: 'Driver',
       housekeeping: 'Housekeeping / Cleaning',
+      mechanic: 'Mechanic',
+      fresher: 'Fresher',
+      other: 'Other',
     },
     hi: {
-      editTitle: 'प्रोफ़ाइल संपादित करें',
-      fullName: 'पूरा नाम',
-      genderLabel: 'लिंग',
-      male: 'पुरुष',
-      female: 'महिला',
-      other: 'अन्य',
-      tradeLabel: 'काम का प्रकार / विशेषता',
-      experienceLabel: 'अनुभव (वर्ष)',
+      editTitle: 'सेटिंग्स और प्रोफ़ाइल बदलें',
+      fullName: 'पहला नाम / पूरा नाम',
+      tradeLabel: 'व्यवसाय',
       addressLabel: 'काम का पता / क्षेत्र',
-      locationBtn: 'स्थान का पता लगाएं (GPS)',
-      locationFetching: 'जीपीएस से जुड़ रहे हैं...',
-      locationSuccess: 'स्थान सत्यापित हो गया!',
-      locationError: 'जीपीएस काम नहीं कर रहा',
       saveBtn: 'बदलाव सुरक्षित करें',
       cancelBtn: 'रद्द करें',
       electrician: 'इलेक्ट्रीशियन (बिजली मिस्त्री)',
       plumber: 'प्लंबर (नलसाज)',
-      painter: 'पेंटर (रंगाई मिस्त्री)',
       carpenter: 'कारपेंटर (बढ़ई)',
       delivery: 'डिलीवरी पार्टनर',
+      driver: 'ड्राइवर (चालक)',
       housekeeping: 'हाउसकीपिंग / सफाई',
+      mechanic: 'मैकेनिक',
+      fresher: 'फ्रेशर',
+      other: 'अन्य',
     }
   }[language];
-
-  const detectLocation = () => {
-    setLocationStatus('fetching');
-    if (!navigator.geolocation) {
-      setLocationStatus('error');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCoords([position.coords.longitude, position.coords.latitude]);
-        setLocationStatus('success');
-      },
-      () => {
-        setLocationStatus('error');
-      }
-    );
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -797,24 +451,26 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({
     setSaving(true);
     const payload: any = {
       fullName,
-      gender,
       tradeCategory,
-      experienceYears: parseInt(experienceYears) || 0,
-      skills,
+      age: age ? parseInt(age) : undefined,
+      currentSalaryEst: currentSalaryEst ? parseInt(currentSalaryEst) : undefined,
+      experienceYears: profile?.experienceYears || 2,
+      languages: [preferredLanguage],
+      skills: profile?.skills || [],
       address,
-    };
-    if (coords) {
-      payload.location = {
+      location: profile?.location || {
         type: 'Point',
-        coordinates: coords,
-      };
-    }
+        coordinates: [77.3718, 28.6273] // Noida fallback coordinates
+      }
+    };
+
+    setLanguage(preferredLanguage);
     await onSave(payload);
     setSaving(false);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="card">
+    <form onSubmit={handleSubmit} className="card animate-fade-in">
       <h3 className="text-center font-bold text-lg mb-4 text-white">{t.editTitle}</h3>
 
       <div className="form-group">
@@ -830,20 +486,6 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({
       </div>
 
       <div className="form-group">
-        <label className="form-label">{t.genderLabel}</label>
-        <select
-          className="input-field select-field"
-          value={gender}
-          onChange={(e) => setGender(e.target.value)}
-          disabled={saving}
-        >
-          <option value="male">{t.male}</option>
-          <option value="female">{t.female}</option>
-          <option value="other">{t.other}</option>
-        </select>
-      </div>
-
-      <div className="form-group">
         <label className="form-label">{t.tradeLabel}</label>
         <select
           className="input-field select-field"
@@ -853,70 +495,39 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({
         >
           <option value="electrician">{t.electrician}</option>
           <option value="plumber">{t.plumber}</option>
-          <option value="painter">{t.painter}</option>
           <option value="carpenter">{t.carpenter}</option>
           <option value="delivery">{t.delivery}</option>
+          <option value="driver">{t.driver}</option>
           <option value="housekeeping">{t.housekeeping}</option>
+          <option value="mechanic">{t.mechanic}</option>
+          <option value="fresher">{t.fresher}</option>
+          <option value="other">{t.other}</option>
         </select>
       </div>
 
       <div className="form-group">
-        <label className="form-label">{t.experienceLabel}</label>
+        <label className="form-label">{language === 'hi' ? 'उम्र (Age)' : 'Age'}</label>
         <input
           type="number"
           className="input-field"
-          min={0}
-          max={50}
-          value={experienceYears}
-          onChange={(e) => setExperienceYears(e.target.value)}
+          placeholder="e.g. 28"
+          value={age}
+          onChange={(e) => setAge(e.target.value)}
           required
           disabled={saving}
         />
       </div>
 
       <div className="form-group">
-        <label className="form-label">{language === 'hi' ? 'कौशल / हुनर (Skills)' : 'Skills / Specialty'}</label>
-        <div className="flex-row gap-2">
-          <input
-            type="text"
-            className="input-field flex-1"
-            placeholder={language === 'hi' ? 'उदा. वायरिंग सुधार, मोटर वाइंडिंग' : 'e.g. Wiring Repair, Troubleshooting'}
-            value={skillInput}
-            onChange={(e) => setSkillInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleAddSkill();
-              }
-            }}
-            disabled={saving}
-          />
-          <button
-            type="button"
-            className="btn btn-secondary py-2 px-3 text-xs"
-            onClick={handleAddSkill}
-            disabled={saving}
-          >
-            {language === 'hi' ? 'जोड़ें' : 'Add'}
-          </button>
-        </div>
-        {skills.length > 0 && (
-          <div className="flex-row flex-wrap gap-2 mt-2">
-            {skills.map((skill, index) => (
-              <span key={index} className="badge badge-verified flex-row text-xs py-1 px-2 gap-1" style={{ color: 'var(--text-accent)' }}>
-                {skill}
-                <button
-                  type="button"
-                  className="hover:text-white font-bold ml-1 text-xs"
-                  onClick={() => handleRemoveSkill(skill)}
-                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', outline: 'none', color: 'inherit' }}
-                >
-                  &times;
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
+        <label className="form-label">{language === 'hi' ? 'अपेक्षित वेतन (मासिक - वैकल्पिक)' : 'Expected Monthly Salary (Optional)'}</label>
+        <input
+          type="number"
+          className="input-field"
+          placeholder="e.g. 15000"
+          value={currentSalaryEst}
+          onChange={(e) => setCurrentSalaryEst(e.target.value)}
+          disabled={saving}
+        />
       </div>
 
       <div className="form-group">
@@ -932,21 +543,16 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({
       </div>
 
       <div className="form-group mb-4">
-        <label className="form-label">GPS Geolocation</label>
-        <button
-          type="button"
-          className={`btn btn-secondary flex-row justify-center ${
-            locationStatus === 'success' ? 'border-success text-success' : ''
-          }`}
-          onClick={detectLocation}
-          disabled={saving || locationStatus === 'fetching'}
+        <label className="form-label">{language === 'hi' ? 'भाषा चुनें' : 'Preferred Language'}</label>
+        <select
+          className="input-field select-field"
+          value={preferredLanguage}
+          onChange={(e) => setPreferredLanguage(e.target.value as 'en' | 'hi')}
+          disabled={saving}
         >
-          <MapPin size={16} className={locationStatus === 'fetching' ? 'animate-bounce' : ''} />
-          {locationStatus === 'idle' && t.locationBtn}
-          {locationStatus === 'fetching' && t.locationFetching}
-          {locationStatus === 'success' && t.locationSuccess}
-          {locationStatus === 'error' && t.locationError}
-        </button>
+          <option value="en">English</option>
+          <option value="hi">हिन्दी</option>
+        </select>
       </div>
 
       <div className="flex-row gap-2">

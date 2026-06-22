@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 import { api, setAuthToken, setSavedUser, getSavedUser } from '../../services/api';
-import { Phone, User, Briefcase, Navigation } from 'lucide-react';
+import { Phone, User, Briefcase } from 'lucide-react';
 
 interface AuthModuleProps {
   onAuthComplete: (user: any) => void;
   language: 'en' | 'hi';
-  setLanguage: (lang: 'en' | 'hi') => void;
 }
 
 export const AuthModule: React.FC<AuthModuleProps> = ({
   onAuthComplete,
   language,
-  setLanguage,
 }) => {
   const [step, setStep] = useState<'login' | 'role' | 'worker-profile'>('login');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -21,27 +19,11 @@ export const AuthModule: React.FC<AuthModuleProps> = ({
   // Role & Profile state
   const [_role, setRole] = useState<'worker' | 'employer' | null>(null);
   const [fullName, setFullName] = useState('');
-  const [gender, setGender] = useState('male');
   const [tradeCategory, setTradeCategory] = useState('electrician');
-  const [languages] = useState<string[]>(['hi']);
-  const [experienceYears, setExperienceYears] = useState('2');
+  const [age, setAge] = useState('');
+  const [experienceYears, setExperienceYears] = useState('');
+  const [gender, setGender] = useState('male');
   const [address, setAddress] = useState('');
-  const [coords, setCoords] = useState<[number, number] | null>(null);
-  const [locationStatus, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
-  const [skills, setSkills] = useState<string[]>([]);
-  const [skillInput, setSkillInput] = useState('');
-
-  const handleAddSkill = () => {
-    const trimmed = skillInput.trim();
-    if (trimmed && !skills.includes(trimmed)) {
-      setSkills([...skills, trimmed]);
-      setSkillInput('');
-    }
-  };
-
-  const handleRemoveSkill = (skillToRemove: string) => {
-    setSkills(skills.filter(s => s !== skillToRemove));
-  };
 
   // Translations dictionary
   const t = {
@@ -75,10 +57,12 @@ export const AuthModule: React.FC<AuthModuleProps> = ({
       errorHeading: 'Alert',
       electrician: 'Electrician',
       plumber: 'Plumber',
-      painter: 'Painter',
       carpenter: 'Carpenter',
       delivery: 'Delivery Partner',
+      driver: 'Driver',
       housekeeping: 'Housekeeping / Cleaning',
+      mechanic: 'Mechanic',
+      fresher: 'Fresher',
     },
     hi: {
       brand: 'स्किलवर्स (SkillVerse)',
@@ -110,10 +94,12 @@ export const AuthModule: React.FC<AuthModuleProps> = ({
       errorHeading: 'त्रुटि',
       electrician: 'इलेक्ट्रीशियन (बिजली मिस्त्री)',
       plumber: 'प्लंबर (नलसाज)',
-      painter: 'पेंटर (रंगाई मिस्त्री)',
       carpenter: 'कारपेंटर (बढ़ई)',
       delivery: 'डिलीवरी पार्टनर',
+      driver: 'ड्राइवर (चालक)',
       housekeeping: 'हाउसकीपिंग / सफाई',
+      mechanic: 'मैकेनिक',
+      fresher: 'फ्रेशर',
     }
   }[language];
 
@@ -173,24 +159,6 @@ export const AuthModule: React.FC<AuthModuleProps> = ({
     }
   };
 
-  // Geolocation lookup
-  const detectLocation = () => {
-    setLocationStatus('fetching');
-    if (!navigator.geolocation) {
-      setLocationStatus('error');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCoords([position.coords.longitude, position.coords.latitude]);
-        setLocationStatus('success');
-      },
-      () => {
-        setLocationStatus('error');
-      }
-    );
-  };
-
   // Save Worker Profile
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,26 +172,18 @@ export const AuthModule: React.FC<AuthModuleProps> = ({
     try {
       const profilePayload: any = {
         fullName,
-        gender,
         tradeCategory,
-        experienceYears: parseInt(experienceYears) || 0,
-        languages,
-        skills,
+        age: age ? parseInt(age) : undefined,
+        experienceYears: experienceYears ? parseInt(experienceYears) : 0,
+        gender,
+        languages: [language],
+        skills: [],
         address,
+        location: {
+          type: 'Point',
+          coordinates: [77.3718, 28.6273], // Noida default coordinates fallback
+        }
       };
-
-      if (coords) {
-        profilePayload.location = {
-          type: 'Point',
-          coordinates: coords, // [lng, lat]
-        };
-      } else {
-        // Mock fallback coordinates if GPS was denied
-        profilePayload.location = {
-          type: 'Point',
-          coordinates: [77.5946, 12.9716], // Bangalore center fallback
-        };
-      }
 
       await api.workers.updateProfile(profilePayload);
       
@@ -238,230 +198,168 @@ export const AuthModule: React.FC<AuthModuleProps> = ({
   };
 
   return (
-    <div className="app-main justify-center">
-      {/* Header Info */}
-      <div className="text-center mb-4">
-        <h1 className="app-logo justify-center mb-1">
-          <Briefcase size={26} className="text-primary" /> {t.brand}
-        </h1>
-        <p className="text-accent font-semibold text-sm uppercase tracking-wider">{t.subtitle}</p>
-        <p className="text-secondary-label mt-1">{t.tagline}</p>
-      </div>
-
-      {error && (
-        <div className="card border-danger text-danger bg-red-950/20 py-3 mb-2 text-center text-sm">
-          <strong>{t.errorHeading}: </strong> {error}
+    <div className="flex-column" style={{ minHeight: '100vh', width: '100%' }}>
+      <header className="app-header">
+        <div className="app-logo">
+          <Briefcase size={22} className="text-primary" />
+          <span>SkillVerse</span>
         </div>
-      )}
+      </header>
 
-      {/* STEP 1: Phone input */}
-      {step === 'login' && (
-        <form onSubmit={handleLogin} className="card">
-          <div className="form-group">
-            <label className="form-label">{t.phoneLabel}</label>
-            <div className="flex-row">
-              <Phone size={18} className="text-muted" />
+      <div className="app-main justify-center" style={{ paddingBottom: '40px' }}>
+        {error && (
+          <div className="card border-danger text-danger bg-red-950/20 py-3 mb-2 text-center text-sm">
+            <strong>{t.errorHeading}: </strong> {error}
+          </div>
+        )}
+
+        {/* STEP 1: Phone input */}
+        {step === 'login' && (
+          <form onSubmit={handleLogin} className="card">
+            <h3 className="text-white font-bold text-lg mb-1 text-center">{t.subtitle}</h3>
+            <p className="text-secondary-label text-xs mb-4 text-center">{t.tagline}</p>
+            
+            <div className="form-group">
+              <label className="form-label">{t.phoneLabel}</label>
+              <div className="flex-row">
+                <Phone size={18} className="text-muted" />
+                <input
+                  type="tel"
+                  className="input-field flex-1"
+                  placeholder={t.phonePlaceholder}
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            <button type="submit" className={`btn btn-primary mt-2 ${loading ? 'btn-disabled' : ''}`} disabled={loading}>
+              {loading ? '...' : t.sendOtp}
+            </button>
+          </form>
+        )}
+
+        {/* STEP 3: Role Picker */}
+        {step === 'role' && (
+          <div className="flex-column gap-4">
+            <h3 className="text-center font-bold text-lg mb-2">{t.chooseRole}</h3>
+
+            <div className="card card-interactive" onClick={() => handleSelectRole('worker')}>
+              <div className="flex-row mb-2">
+                <User className="text-primary" size={24} />
+                <h4 className="text-white font-bold">{t.workerRole}</h4>
+              </div>
+              <p className="text-secondary-label text-sm">{t.workerDesc}</p>
+            </div>
+
+            <div className="card card-interactive" onClick={() => handleSelectRole('employer')}>
+              <div className="flex-row mb-2">
+                <Briefcase className="text-accent" size={24} />
+                <h4 className="text-white font-bold">{t.employerRole}</h4>
+              </div>
+              <p className="text-secondary-label text-sm">{t.employerDesc}</p>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: Worker Profile Setup */}
+        {step === 'worker-profile' && (
+          <form onSubmit={handleSaveProfile} className="card">
+            <h3 className="text-center font-bold text-lg mb-4">{t.setupProfile}</h3>
+
+            <div className="form-group">
+              <label className="form-label">{language === 'hi' ? 'पहला नाम / पूरा नाम' : 'First Name / Full Name'}</label>
               <input
-                type="tel"
-                className="input-field flex-1"
-                placeholder={t.phonePlaceholder}
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                type="text"
+                className="input-field"
+                placeholder="e.g. Rajesh Kumar"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
                 required
                 disabled={loading}
               />
             </div>
-          </div>
 
-          <button type="submit" className={`btn btn-primary mt-2 ${loading ? 'btn-disabled' : ''}`} disabled={loading}>
-            {loading ? '...' : t.sendOtp}
-          </button>
-        </form>
-      )}
-
-      {/* STEP 3: Role Picker */}
-      {step === 'role' && (
-        <div className="flex-column gap-4">
-          <h3 className="text-center font-bold text-lg mb-2">{t.chooseRole}</h3>
-
-          <div className="card card-interactive" onClick={() => handleSelectRole('worker')}>
-            <div className="flex-row mb-2">
-              <User className="text-primary" size={24} />
-              <h4 className="text-white font-bold">{t.workerRole}</h4>
-            </div>
-            <p className="text-secondary-label text-sm">{t.workerDesc}</p>
-          </div>
-
-          <div className="card card-interactive" onClick={() => handleSelectRole('employer')}>
-            <div className="flex-row mb-2">
-              <Briefcase className="text-accent" size={24} />
-              <h4 className="text-white font-bold">{t.employerRole}</h4>
-            </div>
-            <p className="text-secondary-label text-sm">{t.employerDesc}</p>
-          </div>
-        </div>
-      )}
-
-      {/* STEP 4: Worker Profile Setup */}
-      {step === 'worker-profile' && (
-        <form onSubmit={handleSaveProfile} className="card">
-          <h3 className="text-center font-bold text-lg mb-4">{t.setupProfile}</h3>
-
-          <div className="form-group">
-            <label className="form-label">{t.fullName}</label>
-            <input
-              type="text"
-              className="input-field"
-              placeholder="e.g. Rajesh Kumar"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">{t.genderLabel}</label>
-            <select
-              className="input-field select-field"
-              value={gender}
-              onChange={(e) => setGender(e.target.value)}
-              disabled={loading}
-            >
-              <option value="male">{t.male}</option>
-              <option value="female">{t.female}</option>
-              <option value="other">{t.other}</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">{t.tradeLabel}</label>
-            <select
-              className="input-field select-field"
-              value={tradeCategory}
-              onChange={(e) => setTradeCategory(e.target.value)}
-              disabled={loading}
-            >
-              <option value="electrician">{t.electrician}</option>
-              <option value="plumber">{t.plumber}</option>
-              <option value="painter">{t.painter}</option>
-              <option value="carpenter">{t.carpenter}</option>
-              <option value="delivery">{t.delivery}</option>
-              <option value="housekeeping">{t.housekeeping}</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">{t.experienceLabel}</label>
-            <input
-              type="number"
-              className="input-field"
-              min={0}
-              max={50}
-              value={experienceYears}
-              onChange={(e) => setExperienceYears(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">{language === 'hi' ? 'कौशल / हुनर (Skills)' : 'Skills / Specialty'}</label>
-            <div className="flex-row gap-2">
-              <input
-                type="text"
-                className="input-field flex-1"
-                placeholder={language === 'hi' ? 'उदा. वायरिंग सुधार, मोटर वाइंडिंग' : 'e.g. Wiring Repair, Troubleshooting'}
-                value={skillInput}
-                onChange={(e) => setSkillInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddSkill();
-                  }
-                }}
-                disabled={loading}
-              />
-              <button
-                type="button"
-                className="btn btn-secondary py-2 px-3 text-xs"
-                onClick={handleAddSkill}
+            <div className="form-group">
+              <label className="form-label">{language === 'hi' ? 'व्यवसाय' : 'Occupation'}</label>
+              <select
+                className="input-field select-field"
+                value={tradeCategory}
+                onChange={(e) => setTradeCategory(e.target.value)}
                 disabled={loading}
               >
-                {language === 'hi' ? 'जोड़ें' : 'Add'}
-              </button>
+                <option value="electrician">{t.electrician}</option>
+                <option value="plumber">{t.plumber}</option>
+                <option value="carpenter">{t.carpenter}</option>
+                <option value="delivery">{t.delivery}</option>
+                <option value="driver">{t.driver}</option>
+                <option value="housekeeping">{t.housekeeping}</option>
+                <option value="mechanic">{t.mechanic}</option>
+                <option value="fresher">{t.fresher}</option>
+                <option value="other">{t.other}</option>
+              </select>
             </div>
-            {skills.length > 0 && (
-              <div className="flex-row flex-wrap gap-2 mt-2">
-                {skills.map((skill, index) => (
-                  <span key={index} className="badge badge-verified flex-row text-xs py-1 px-2 gap-1" style={{ color: 'var(--text-accent)' }}>
-                    {skill}
-                    <button
-                      type="button"
-                      className="hover:text-white font-bold ml-1 text-xs"
-                      onClick={() => handleRemoveSkill(skill)}
-                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', outline: 'none', color: 'inherit' }}
-                    >
-                      &times;
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
 
-          <div className="form-group">
-            <label className="form-label">{t.addressLabel}</label>
-            <input
-              type="text"
-              className="input-field"
-              placeholder="e.g. Sector 62, Noida"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </div>
+            <div className="form-group">
+              <label className="form-label">{language === 'hi' ? 'उम्र (Age)' : 'Age'}</label>
+              <input
+                type="number"
+                className="input-field"
+                placeholder="e.g. 28"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
 
-          {/* Location Verification Button */}
-          <div className="form-group mb-4">
-            <label className="form-label">GPS Geolocation</label>
-            <button
-              type="button"
-              className={`btn btn-secondary flex-row justify-center ${
-                locationStatus === 'success' ? 'border-success text-success' : ''
-              }`}
-              onClick={detectLocation}
-              disabled={loading || locationStatus === 'fetching'}
-            >
-              <Navigation size={16} className={locationStatus === 'fetching' ? 'animate-bounce' : ''} />
-              {locationStatus === 'idle' && t.locationBtn}
-              {locationStatus === 'fetching' && t.locationFetching}
-              {locationStatus === 'success' && t.locationSuccess}
-              {locationStatus === 'error' && t.locationError}
+            <div className="form-group">
+              <label className="form-label">{t.experienceLabel}</label>
+              <input
+                type="number"
+                className="input-field"
+                placeholder="e.g. 3"
+                value={experienceYears}
+                onChange={(e) => setExperienceYears(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">{t.genderLabel}</label>
+              <select
+                className="input-field select-field"
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                disabled={loading}
+              >
+                <option value="male">{t.male}</option>
+                <option value="female">{t.female}</option>
+                <option value="other">{t.other}</option>
+              </select>
+            </div>
+
+            <div className="form-group mb-4">
+              <label className="form-label">{t.addressLabel}</label>
+              <input
+                type="text"
+                className="input-field"
+                placeholder="e.g. Sector 62, Noida"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <button type="submit" className={`btn btn-primary ${loading ? 'btn-disabled' : ''}`} disabled={loading}>
+              {loading ? '...' : t.finishBtn}
             </button>
-          </div>
-
-          <button type="submit" className={`btn btn-primary ${loading ? 'btn-disabled' : ''}`} disabled={loading}>
-            {loading ? '...' : t.finishBtn}
-          </button>
-        </form>
-      )}
-
-      {/* Language Switcher Overlay Link */}
-      <div className="flex-row justify-center gap-2 mt-4">
-        <button
-          className={`language-pill ${language === 'en' ? 'btn-primary' : ''}`}
-          onClick={() => setLanguage('en')}
-        >
-          English
-        </button>
-        <button
-          className={`language-pill ${language === 'hi' ? 'btn-primary' : ''}`}
-          onClick={() => setLanguage('hi')}
-        >
-          हिन्दी
-        </button>
+          </form>
+        )}
       </div>
     </div>
   );

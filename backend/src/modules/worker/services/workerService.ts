@@ -37,9 +37,18 @@ export class WorkerService {
       throw new NotFoundError('Associated user profile not found.');
     }
 
+    let userModified = false;
     // Force synchronize the User collection role to 'worker' if they save a worker profile
     if (user.role !== 'worker') {
       user.role = 'worker';
+      userModified = true;
+    }
+    // Update preferredLanguage if set in data languages
+    if (data.languages && data.languages[0] && user.preferredLanguage !== data.languages[0]) {
+      user.preferredLanguage = data.languages[0];
+      userModified = true;
+    }
+    if (userModified) {
       await user.save();
     }
 
@@ -50,6 +59,7 @@ export class WorkerService {
       gender: data.gender,
       tradeCategory: data.tradeCategory,
       currentSalaryEst: data.currentSalaryEst,
+      age: data.age,
       languages: data.languages || ['en'],
       skills: data.skills || [],
       experienceYears: data.experienceYears || 0,
