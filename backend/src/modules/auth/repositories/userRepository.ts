@@ -1,6 +1,7 @@
 import { User, IUser } from '../entities/user';
 
 export interface IUserRepository {
+  findByEmail(email: string): Promise<IUser | null>;
   findByPhoneNumber(phoneNumber: string): Promise<IUser | null>;
   findById(id: string): Promise<IUser | null>;
   create(userData: Partial<IUser>): Promise<IUser>;
@@ -8,6 +9,10 @@ export interface IUserRepository {
 }
 
 export class UserRepository implements IUserRepository {
+  async findByEmail(email: string): Promise<IUser | null> {
+    return User.findOne({ email: email.toLowerCase() });
+  }
+
   async findByPhoneNumber(phoneNumber: string): Promise<IUser | null> {
     return User.findOne({ phoneNumber });
   }

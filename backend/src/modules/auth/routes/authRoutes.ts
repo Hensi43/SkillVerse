@@ -6,8 +6,15 @@ import { authenticate } from '../../../shared/middlewares/auth';
 const router = Router();
 const controller = new AuthController();
 
+// Email / Password Auth (primary flow)
+router.post('/register', authLimiter, controller.register);
+router.post('/login', authLimiter, controller.login);
+
+// Phone / OTP Auth (legacy, kept for compatibility)
 router.post('/request-otp', authLimiter, controller.requestOtp);
 router.post('/verify-otp', authLimiter, controller.verifyOtp);
+
+// Token management
 router.post('/refresh', controller.refresh);
 router.put('/role', authenticate as any, controller.updateRole as any);
 

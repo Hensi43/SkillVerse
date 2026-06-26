@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import { config } from '../../../config/env';
 import { UserRepository } from '../repositories/userRepository';
 import { IUser } from '../entities/user';
@@ -12,21 +13,83 @@ export class AuthService {
   }
 
   /**
+   * Register a new user with email and password.
+   */
+  async register(
+    email: string,
+    password: string,
+    name: string
+  ): Promise<{ accessToken: string; refreshToken: string; user: IUser }> {
+    if (!email || !password || !name) {
+      throw new BadRequestError('Name, email, and password are all required.');
+    }
+    if (password.length < 6) {
+      throw new BadRequestError('Password must be at least 6 characters long.');
+    }
+
+    const existing = await this.userRepository.findByEmail(email);
+    if (existing) {
+      throw new BadRequestError('An account with this email already exists.');
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const user = await this.userRepository.create({
+      email: email.toLowerCase(),
+      passwordHash,
+      name,
+      role: 'worker', // default, will be updated during role selection
+      preferredLanguage: 'en',
+    });
+
+    const accessToken = this.generateAccessToken(user);
+    const refreshToken = this.generateRefreshToken(user);
+
+    return { accessToken, refreshToken, user };
+  }
+
+  /**
+   * Log in an existing user with email and password.
+   */
+  async login(
+    email: string,
+    password: string
+  ): Promise<{ accessToken: string; refreshToken: string; user: IUser }> {
+    if (!email || !password) {
+      throw new BadRequestError('Email and password are required.');
+    }
+
+    const user = await this.userRepository.findByEmail(email);
+    if (!user || !user.passwordHash) {
+      throw new UnauthorizedError('Invalid email or password.');
+    }
+
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      throw new UnauthorizedError('Invalid email or password.');
+    }
+
+    const accessToken = this.generateAccessToken(user);
+    const refreshToken = this.generateRefreshToken(user);
+
+    return { accessToken, refreshToken, user };
+  }
+
+  /**
    * Generates a 6-digit OTP and logs it to console for local testing.
+   * Kept for backwards compatibility.
    */
   async requestOtp(phoneNumber: string): Promise<{ success: boolean; mockCode?: string }> {
     if (!phoneNumber) {
       throw new BadRequestError('Phone number is required.');
     }
 
-    // Standardize 6-digit OTP code
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiration
+    const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
     let user = await this.userRepository.findByPhoneNumber(phoneNumber);
 
     if (!user) {
-      // Auto-register new users as workers by default
       user = await this.userRepository.create({
         phoneNumber,
         role: 'worker',
@@ -34,7 +97,6 @@ export class AuthService {
       });
     }
 
-    // Save temporary OTP state
     user.otpCode = otpCode;
     user.otpExpiresAt = otpExpiresAt;
     await user.save();
@@ -49,12 +111,12 @@ export class AuthService {
       return { success: true, mockCode: otpCode };
     }
 
-    // Here you would integrate Twilio or MSG91 in production.
     return { success: true };
   }
 
   /**
    * Directly log in or register user using phone number (OTP disabled).
+   * Kept for backwards compatibility.
    */
   async verifyOtp(
     phoneNumber: string,
@@ -66,7 +128,6 @@ export class AuthService {
 
     let user = await this.userRepository.findByPhoneNumber(phoneNumber);
     if (!user) {
-      // Auto-register new users as workers by default
       user = await this.userRepository.create({
         phoneNumber,
         role: 'worker',
@@ -74,7 +135,6 @@ export class AuthService {
       });
     }
 
-    // Clear any pending OTP code just in case
     user.otpCode = undefined;
     user.otpExpiresAt = undefined;
     await user.save();
@@ -122,9 +182,9 @@ export class AuthService {
 
   generateAccessToken(user: IUser): string {
     return jwt.sign(
-      { id: user._id, role: user.role, phoneNumber: user.phoneNumber },
+      { id: user._id, role: user.role, email: user.email, phoneNumber: user.phoneNumber },
       config.jwtSecret,
-      { expiresIn: '1d' } // Extended token life for smooth MVP demoing
+      { expiresIn: '1d' }
     );
   }
 

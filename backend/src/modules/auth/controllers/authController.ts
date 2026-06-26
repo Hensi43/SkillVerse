@@ -10,6 +10,54 @@ export class AuthController {
     this.authService = new AuthService();
   }
 
+  register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email, password, name } = req.body;
+      const result = await this.authService.register(email, password, name);
+      res.status(201).json({
+        success: true,
+        message: 'Account created successfully.',
+        data: {
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          user: {
+            id: result.user._id,
+            email: result.user.email,
+            name: result.user.name,
+            role: result.user.role,
+            preferredLanguage: result.user.preferredLanguage,
+          },
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email, password } = req.body;
+      const result = await this.authService.login(email, password);
+      res.status(200).json({
+        success: true,
+        message: 'Login successful.',
+        data: {
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          user: {
+            id: result.user._id,
+            email: result.user.email,
+            name: result.user.name,
+            role: result.user.role,
+            preferredLanguage: result.user.preferredLanguage,
+          },
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   requestOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { phoneNumber } = req.body;
@@ -17,7 +65,7 @@ export class AuthController {
       res.status(200).json({
         success: true,
         message: 'OTP dispatched successfully.',
-        ...(result.mockCode ? { mockCode: result.mockCode } : {})
+        ...(result.mockCode ? { mockCode: result.mockCode } : {}),
       });
     } catch (error) {
       next(error);
@@ -37,10 +85,10 @@ export class AuthController {
           user: {
             id: result.user._id,
             phoneNumber: result.user.phoneNumber,
-            role: res.locals.roleOverride || result.user.role, // Support UI mock roles
-            preferredLanguage: result.user.preferredLanguage
-          }
-        }
+            role: res.locals.roleOverride || result.user.role,
+            preferredLanguage: result.user.preferredLanguage,
+          },
+        },
       });
     } catch (error) {
       next(error);
@@ -54,8 +102,8 @@ export class AuthController {
       res.status(200).json({
         success: true,
         data: {
-          accessToken: result.accessToken
-        }
+          accessToken: result.accessToken,
+        },
       });
     } catch (error) {
       next(error);
@@ -80,11 +128,13 @@ export class AuthController {
           accessToken,
           user: {
             id: user._id,
+            email: user.email,
+            name: user.name,
             phoneNumber: user.phoneNumber,
             role: user.role,
-            preferredLanguage: user.preferredLanguage
-          }
-        }
+            preferredLanguage: user.preferredLanguage,
+          },
+        },
       });
     } catch (error) {
       next(error);

@@ -1,7 +1,10 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IUser extends Document {
-  phoneNumber: string;
+  email?: string;
+  passwordHash?: string;
+  name?: string;
+  phoneNumber?: string;
   role: 'worker' | 'employer' | 'admin';
   preferredLanguage: string;
   otpCode?: string;
@@ -12,30 +15,45 @@ export interface IUser extends Document {
 
 const UserSchema = new Schema<IUser>(
   {
-    phoneNumber: { 
-      type: String, 
-      required: true, 
-      unique: true, 
-      index: true 
+    email: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+      lowercase: true,
+      trim: true,
     },
-    role: { 
-      type: String, 
-      enum: ['worker', 'employer', 'admin'], 
-      default: 'worker' 
+    passwordHash: {
+      type: String,
     },
-    preferredLanguage: { 
-      type: String, 
-      default: 'en' 
+    name: {
+      type: String,
+      trim: true,
     },
-    otpCode: { 
-      type: String 
+    phoneNumber: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
     },
-    otpExpiresAt: { 
-      type: Date 
+    role: {
+      type: String,
+      enum: ['worker', 'employer', 'admin'],
+      default: 'worker',
+    },
+    preferredLanguage: {
+      type: String,
+      default: 'en',
+    },
+    otpCode: {
+      type: String,
+    },
+    otpExpiresAt: {
+      type: Date,
     },
   },
-  { 
-    timestamps: true 
+  {
+    timestamps: true,
   }
 );
 
