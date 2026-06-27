@@ -62,12 +62,21 @@ export const TiltCard: React.FC<TiltCardProps> = ({
     // @ts-ignore — dynamic tag
     <Tag
       ref={ref}
-      className={`tilt-card${hovering ? ' tilt-card--active' : ''} ${className}`}
+      className={`tilt-card${hovering ? ' tilt-card--active' : ''} ${className ? className : ''}`}
       style={{ ...style, ...tiltStyle }}
-      onMouseMove={onMove}
-      onMouseEnter={onEnter}
-      onMouseLeave={onLeave}
       {...rest}
+      onMouseMove={(e: any) => {
+        onMove(e);
+        if (rest.onMouseMove) rest.onMouseMove(e);
+      }}
+      onMouseEnter={(e: any) => {
+        onEnter();
+        if (rest.onMouseEnter) rest.onMouseEnter(e);
+      }}
+      onMouseLeave={(e: any) => {
+        onLeave();
+        if (rest.onMouseLeave) rest.onMouseLeave(e);
+      }}
     >
       {children}
     </Tag>
