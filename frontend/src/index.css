@@ -226,21 +226,13 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.6), transparent);
 }
 
-/* ── Tilt / Floating card ── */
+/* ── Tilt card (no float animation ─ just 3D perspective for JS tilt) ── */
 .tilt-card {
   transform-style: preserve-3d;
   will-change: transform;
 }
 .tilt-card--active {
-  /* pause the CSS float while JS tilt is active */
   animation-play-state: paused;
-}
-
-@keyframes cardFloat {
-  0%   { transform: perspective(900px) translateY(0px)   rotateX(0deg); }
-  40%  { transform: perspective(900px) translateY(-10px) rotateX(1.5deg); }
-  70%  { transform: perspective(900px) translateY(-5px)  rotateX(0.8deg); }
-  100% { transform: perspective(900px) translateY(0px)   rotateX(0deg); }
 }
 
 /* ── Landing Card ── */
@@ -572,10 +564,8 @@ h1, h2, h3, h4, h5, h6 {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   position: relative;
   overflow: hidden;
-  /* Float animation on every card */
+  /* 3D context for tilt effect */
   transform-style: preserve-3d;
-  will-change: transform;
-  animation: cardFloat 4s ease-in-out infinite;
 }
 .card:hover {
   border-color: rgba(99, 102, 241, 0.18);
@@ -997,86 +987,50 @@ h1, h2, h3, h4, h5, h6 {
 
 @media (min-width: 992px) {
   #root {
-    max-width: 1240px;
-    box-shadow: 0 0 100px rgba(0,0,0,0.7);
-  }
-
-  #root:has(.bottom-nav) {
-    display: grid;
-    grid-template-columns: 260px 1fr;
-    grid-template-rows: auto 1fr;
-    grid-template-areas:
-      "sidebar header"
-      "sidebar main";
-  }
-
-  #root:has(.bottom-nav) .bottom-nav {
-    grid-area: sidebar;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    width: 260px;
-    flex-direction: column;
-    justify-content: flex-start;
-    padding: 32px 16px;
-    gap: 4px;
-    border-top: none;
-    border-right: 1px solid var(--border-card);
-    background: rgba(7, 8, 15, 0.99);
-  }
-
-  #root:has(.bottom-nav) .bottom-nav-item {
-    flex-direction: row;
-    justify-content: flex-start;
-    padding: 11px 16px;
-    gap: 12px;
-    border-radius: var(--r-md);
+    max-width: 100%;
     width: 100%;
-    height: auto;
-    flex: none;
-    font-size: 13px;
-    border: 1px solid transparent;
-  }
-  #root:has(.bottom-nav) .bottom-nav-item:hover {
-    background: rgba(255,255,255,0.03);
-    color: var(--text-primary);
-  }
-  #root:has(.bottom-nav) .bottom-nav-item-active {
-    background: rgba(99,102,241,0.1);
-    color: #a5b4fc;
-    border-color: rgba(99,102,241,0.2);
-  }
-  #root:has(.bottom-nav) .bottom-nav-item span { font-size: 13px; }
-
-  #root:has(.bottom-nav) .app-header {
-    grid-area: header;
-    position: sticky;
-    top: 0;
-    z-index: 98;
-  }
-  #root:has(.bottom-nav) .app-main {
-    grid-area: main;
-    padding: 30px;
-    padding-bottom: 30px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: none;
+    border: none;
   }
 
+  /* App pages: header + scrollable main */
+  .app-header {
+    width: 100%;
+  }
+
+  .app-main {
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 32px 40px 40px;
+    padding-bottom: 40px;
+  }
+
+  /* Auth pages stay centered on desktop */
+  .auth-root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .auth-main {
+    min-height: calc(100vh - 62px);
+    padding: 60px 24px;
+  }
+  .auth-card  { max-width: 440px; }
+  .auth-landing { max-width: 480px; }
+  .auth-headline { font-size: 38px; }
+
+  /* Job grid on wide screens */
   .job-feed-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 16px;
   }
+
   .passport-card,
   .assessment-card {
-    max-width: 580px;
-    margin: 0 auto;
-    width: 100%;
+    max-width: 640px;
   }
-
-  .auth-main {
-    min-height: calc(100vh - 62px);
-    padding: 60px 24px;
-  }
-  .auth-card    { max-width: 440px; }
-  .auth-landing { max-width: 460px; }
-  .auth-headline{ font-size: 38px; }
 }
