@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { api, setAuthToken, setSavedUser, getSavedUser } from '../../services/api';
 import { Mail, Lock, User, Briefcase, Eye, EyeOff, Sparkles, ArrowRight, ChevronLeft } from 'lucide-react';
 
@@ -35,6 +35,52 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
   const [address, setAddress] = useState('');
 
   const clearError = () => setError('');
+
+  // ── 3D Tilt effect for landing card ────────────────────────────────────────
+  const tiltRef = useRef<HTMLDivElement>(null);
+  const rafRef  = useRef<number>(0);
+  const tiltState = useRef({ rotX: 0, rotY: 0, glareX: 50, glareY: 50 });
+  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
+  const [glareStyle, setGlareStyle] = useState<React.CSSProperties>({ opacity: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+
+  const handleTiltMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = tiltRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    // Cursor position relative to card centre (-1 to +1)
+    const cx = (e.clientX - rect.left) / rect.width  - 0.5;  // -0.5 … +0.5
+    const cy = (e.clientY - rect.top)  / rect.height - 0.5;
+    // Tilt TOWARD cursor: positive cx → positive rotY (lean right), negative cy → negative rotX (lean up)
+    const targetRotY =  cx * 20;   // max ±10 deg
+    const targetRotX = -cy * 14;   // max ±7  deg
+    const glareX = ((e.clientX - rect.left) / rect.width)  * 100;
+    const glareY = ((e.clientY - rect.top)  / rect.height) * 100;
+
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      setTiltStyle({
+        transform: `perspective(900px) rotateX(${targetRotX}deg) rotateY(${targetRotY}deg) scale3d(1.03,1.03,1.03)`,
+        transition: 'transform 0.08s linear',
+      });
+      setGlareStyle({
+        opacity: 0.18,
+        background: `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.55) 0%, transparent 65%)`,
+      });
+    });
+  }, []);
+
+  const handleTiltLeave = useCallback(() => {
+    cancelAnimationFrame(rafRef.current);
+    setIsHovering(false);
+    setTiltStyle({
+      transform: 'perspective(900px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)',
+      transition: 'transform 0.55s cubic-bezier(0.23,1,0.32,1)',
+    });
+    setGlareStyle({ opacity: 0, transition: 'opacity 0.4s ease' });
+  }, []);
+
+  const handleTiltEnter = useCallback(() => setIsHovering(true), []);
 
   // ── Login handler ─────────────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
@@ -171,7 +217,17 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
 
         {/* ── LANDING ── */}
         {step === 'landing' && (
-          <div className="auth-card auth-landing">
+          <div
+            ref={tiltRef}
+            className={`auth-card auth-landing auth-tilt-card${isHovering ? ' auth-tilt-hovering' : ''}`}
+            style={tiltStyle}
+            onMouseMove={handleTiltMove}
+            onMouseEnter={handleTiltEnter}
+            onMouseLeave={handleTiltLeave}
+          >
+            {/* Glare layer */}
+            <div className="auth-tilt-glare" style={glareStyle} />
+
             <div className="auth-badge">
               <Sparkles size={13} />
               AI-Powered Skill Passport

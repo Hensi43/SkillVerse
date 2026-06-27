@@ -226,10 +226,42 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.6), transparent);
 }
 
+/* ── Tilt / Floating card ── */
+.auth-tilt-card {
+  transform-style: preserve-3d;
+  will-change: transform;
+  /* Idle floating bob */
+  animation: cardFloat 4s ease-in-out infinite;
+}
+.auth-tilt-hovering {
+  /* Pause float while cursor is active */
+  animation-play-state: paused;
+}
+
+/* Glare overlay */
+.auth-tilt-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 10;
+  mix-blend-mode: screen;
+  transition: opacity 0.15s ease;
+}
+
+@keyframes cardFloat {
+  0%   { transform: perspective(900px) translateY(0px)   rotateX(0deg); }
+  40%  { transform: perspective(900px) translateY(-10px) rotateX(1.5deg); }
+  70%  { transform: perspective(900px) translateY(-5px)  rotateX(0.5deg); }
+  100% { transform: perspective(900px) translateY(0px)   rotateX(0deg); }
+}
+
 /* ── Landing Card ── */
 .auth-landing {
   text-align: center;
   padding: 44px 32px 36px;
+  /* Lift the card visually with a stronger shadow when floating */
+  box-shadow: var(--shadow-xl), 0 30px 60px rgba(0, 0, 0, 0.5), var(--glow);
 }
 
 .auth-badge {
