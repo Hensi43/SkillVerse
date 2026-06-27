@@ -119,6 +119,15 @@ export const api = {
         body: JSON.stringify(profileData),
       }),
     getPassport: (workerId: string) => fetchClient(`/workers/passport/${workerId}`),
+    getNearby: (params: { lat: number; lng: number; radiusKm?: number; category?: string }) => {
+      const query = new URLSearchParams({
+        lat: params.lat.toString(),
+        lng: params.lng.toString(),
+      });
+      if (params.radiusKm !== undefined) query.append('radiusKm', params.radiusKm.toString());
+      if (params.category) query.append('category', params.category);
+      return fetchClient(`/workers/nearby?${query.toString()}`);
+    },
   },
 
   // Jobs
