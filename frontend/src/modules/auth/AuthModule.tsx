@@ -1,6 +1,7 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import { api, setAuthToken, setSavedUser, getSavedUser } from '../../services/api';
 import { Mail, Lock, User, Briefcase, Eye, EyeOff, Sparkles, ArrowRight, ChevronLeft } from 'lucide-react';
+import { TiltCard } from '../../components/TiltCard';
 
 interface AuthModuleProps {
   onAuthComplete: (user: any) => void;
@@ -35,52 +36,6 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
   const [address, setAddress] = useState('');
 
   const clearError = () => setError('');
-
-  // ── 3D Tilt effect for landing card ────────────────────────────────────────
-  const tiltRef = useRef<HTMLDivElement>(null);
-  const rafRef  = useRef<number>(0);
-  const tiltState = useRef({ rotX: 0, rotY: 0, glareX: 50, glareY: 50 });
-  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
-  const [glareStyle, setGlareStyle] = useState<React.CSSProperties>({ opacity: 0 });
-  const [isHovering, setIsHovering] = useState(false);
-
-  const handleTiltMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const el = tiltRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    // Cursor position relative to card centre (-1 to +1)
-    const cx = (e.clientX - rect.left) / rect.width  - 0.5;  // -0.5 … +0.5
-    const cy = (e.clientY - rect.top)  / rect.height - 0.5;
-    // Tilt TOWARD cursor: positive cx → positive rotY (lean right), negative cy → negative rotX (lean up)
-    const targetRotY =  cx * 20;   // max ±10 deg
-    const targetRotX = -cy * 14;   // max ±7  deg
-    const glareX = ((e.clientX - rect.left) / rect.width)  * 100;
-    const glareY = ((e.clientY - rect.top)  / rect.height) * 100;
-
-    cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(() => {
-      setTiltStyle({
-        transform: `perspective(900px) rotateX(${targetRotX}deg) rotateY(${targetRotY}deg) scale3d(1.03,1.03,1.03)`,
-        transition: 'transform 0.08s linear',
-      });
-      setGlareStyle({
-        opacity: 0.18,
-        background: `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.55) 0%, transparent 65%)`,
-      });
-    });
-  }, []);
-
-  const handleTiltLeave = useCallback(() => {
-    cancelAnimationFrame(rafRef.current);
-    setIsHovering(false);
-    setTiltStyle({
-      transform: 'perspective(900px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)',
-      transition: 'transform 0.55s cubic-bezier(0.23,1,0.32,1)',
-    });
-    setGlareStyle({ opacity: 0, transition: 'opacity 0.4s ease' });
-  }, []);
-
-  const handleTiltEnter = useCallback(() => setIsHovering(true), []);
 
   // ── Login handler ─────────────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
@@ -194,7 +149,7 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
 
   return (
     <div className="auth-root">
-      {/* ── Background decoration ── */}
+      {/* ── Background orbs ── */}
       <div className="auth-bg-orb auth-bg-orb-1" />
       <div className="auth-bg-orb auth-bg-orb-2" />
       <div className="auth-bg-orb auth-bg-orb-3" />
@@ -217,17 +172,7 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
 
         {/* ── LANDING ── */}
         {step === 'landing' && (
-          <div
-            ref={tiltRef}
-            className={`auth-card auth-landing auth-tilt-card${isHovering ? ' auth-tilt-hovering' : ''}`}
-            style={tiltStyle}
-            onMouseMove={handleTiltMove}
-            onMouseEnter={handleTiltEnter}
-            onMouseLeave={handleTiltLeave}
-          >
-            {/* Glare layer */}
-            <div className="auth-tilt-glare" style={glareStyle} />
-
+          <TiltCard className="auth-card auth-landing" maxTilt={16} hoverScale={1.04}>
             <div className="auth-badge">
               <Sparkles size={13} />
               AI-Powered Skill Passport
@@ -262,12 +207,12 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
               <span>•</span>
               <span>🌐 Vernacular</span>
             </div>
-          </div>
+          </TiltCard>
         )}
 
         {/* ── LOGIN ── */}
         {step === 'login' && (
-          <form className="auth-card" onSubmit={handleLogin} noValidate>
+          <TiltCard as="form" className="auth-card" onSubmit={handleLogin} noValidate maxTilt={10}>
             <button type="button" className="auth-back-btn" onClick={() => { clearError(); setStep('landing'); }}>
               <ChevronLeft size={16} /> Back
             </button>
@@ -333,12 +278,12 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
                 Create one
               </button>
             </p>
-          </form>
+          </TiltCard>
         )}
 
         {/* ── REGISTER ── */}
         {step === 'register' && (
-          <form className="auth-card" onSubmit={handleRegister} noValidate>
+          <TiltCard as="form" className="auth-card" onSubmit={handleRegister} noValidate maxTilt={10}>
             <button type="button" className="auth-back-btn" onClick={() => { clearError(); setStep('landing'); }}>
               <ChevronLeft size={16} /> Back
             </button>
@@ -440,23 +385,25 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
                 Sign in
               </button>
             </p>
-          </form>
+          </TiltCard>
         )}
 
         {/* ── ROLE PICKER ── */}
         {step === 'role' && (
-          <div className="auth-card">
+          <TiltCard className="auth-card" maxTilt={10}>
             <h2 className="auth-card-title">You're in! 🎉</h2>
             <p className="auth-card-sub">Choose how you want to use SkillVerse</p>
 
             <div className="role-grid">
-              <div
+              <TiltCard
                 id="role-worker"
                 className="role-card"
                 onClick={() => !loading && handleSelectRole('worker')}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => e.key === 'Enter' && handleSelectRole('worker')}
+                onKeyDown={(e: any) => e.key === 'Enter' && handleSelectRole('worker')}
+                maxTilt={12}
+                hoverScale={1.02}
               >
                 <div className="role-icon role-icon-worker">
                   <User size={26} />
@@ -464,15 +411,17 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
                 <h3>Job Seeker</h3>
                 <p>Complete voice assessments, build a Skill Passport and find local work.</p>
                 <span className="role-cta">Get hired <ArrowRight size={13} /></span>
-              </div>
+              </TiltCard>
 
-              <div
+              <TiltCard
                 id="role-employer"
                 className="role-card"
                 onClick={() => !loading && handleSelectRole('employer')}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => e.key === 'Enter' && handleSelectRole('employer')}
+                onKeyDown={(e: any) => e.key === 'Enter' && handleSelectRole('employer')}
+                maxTilt={12}
+                hoverScale={1.02}
               >
                 <div className="role-icon role-icon-employer">
                   <Briefcase size={26} />
@@ -480,16 +429,16 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
                 <h3>Employer</h3>
                 <p>Post geospatial jobs, screen applicants, and listen to voice pitches.</p>
                 <span className="role-cta">Post jobs <ArrowRight size={13} /></span>
-              </div>
+              </TiltCard>
             </div>
 
             {loading && <p className="auth-card-sub text-center mt-4">Setting up your account…</p>}
-          </div>
+          </TiltCard>
         )}
 
         {/* ── WORKER PROFILE SETUP ── */}
         {step === 'worker-profile' && (
-          <form className="auth-card" onSubmit={handleSaveProfile}>
+          <TiltCard as="form" className="auth-card" onSubmit={handleSaveProfile} maxTilt={8}>
             <h2 className="auth-card-title">Build your Skill Passport</h2>
             <p className="auth-card-sub">Tell employers what you can do</p>
 
@@ -597,7 +546,7 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
             >
               {loading ? <span className="btn-spinner" /> : <>Generate Skill Passport <Sparkles size={15} /></>}
             </button>
-          </form>
+          </TiltCard>
         )}
       </main>
     </div>
