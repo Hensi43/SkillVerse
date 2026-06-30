@@ -4,6 +4,7 @@ import { app } from './app';
 import { config } from './config/env';
 import { connectDatabase } from './config/db';
 import { Message } from './modules/chat/entities/message';
+import { logger } from './core/utils/logger';
 
 const server = http.createServer(app);
 
@@ -17,12 +18,12 @@ const io = new Server(server, {
 
 // Real-Time Socket Connection Handlers
 io.on('connection', (socket) => {
-  console.log(`Socket client connected: ${socket.id}`);
+  logger.info(`Socket client connected: ${socket.id}`);
 
   // Client joins a specific room corresponding to a job matching thread
   socket.on('join_chat', async ({ chatId }) => {
     socket.join(`chat:${chatId}`);
-    console.log(`Socket client ${socket.id} joined chat room: chat:${chatId}`);
+    logger.info(`Socket client ${socket.id} joined chat room: chat:${chatId}`);
     
     // Auto-fetch and return last 50 messages for chat history
     try {
@@ -32,7 +33,7 @@ io.on('connection', (socket) => {
       
       socket.emit('chat_history', { chatId, history });
     } catch (err) {
-      console.error('Failed to retrieve chat logs:', err);
+      logger.error('Failed to retrieve chat logs:', err);
     }
   });
 
@@ -51,15 +52,15 @@ io.on('connection', (socket) => {
 
       // Broadcast message to everyone in the room (including sender to confirm receipt)
       io.to(`chat:${chatId}`).emit('new_message', message);
-      console.log(`[CHAT ROOM ${chatId}] Message sent by ${senderId} (type: ${messageType})`);
+      logger.info(`[CHAT ROOM ${chatId}] Message sent by ${senderId} (type: ${messageType})`);
     } catch (err) {
-      console.error('Socket message save failed:', err);
+      logger.error('Socket message save failed:', err);
       socket.emit('error_alert', { message: 'Message delivery failed.' });
     }
   });
 
   socket.on('disconnect', () => {
-    console.log(`Socket client disconnected: ${socket.id}`);
+    logger.info(`Socket client disconnected: ${socket.id}`);
   });
 });
 
@@ -68,14 +69,14 @@ const startServer = async () => {
   await connectDatabase();
 
   server.listen(config.port, () => {
-    console.log(`\n======================================================`);
-    console.log(`⚡️ [SkillVerse Server] Running on http://localhost:${config.port}`);
-    console.log(`⚡️ [Socket.io Gateway] Ready for WS handshakes`);
-    console.log(`======================================================\n`);
+    logger.info(`\n======================================================`);
+    logger.info(`⚡️ [SkillVerse Server] Running on http://localhost:${config.port}`);
+    logger.info(`⚡️ [Socket.io Gateway] Ready for WS handshakes`);
+    logger.info(`======================================================\n`);
   });
 };
 
 startServer().catch((error) => {
-  console.error('Server failed to start:', error);
+  logger.error('Server failed to start:', error);
   process.exit(1);
 });

@@ -5,6 +5,7 @@ import { config } from './config/env';
 import { errorHandler } from './shared/middlewares/errorHandler';
 import { apiLimiter } from './shared/middlewares/rateLimit';
 import { NotFoundError } from './core/errors/appError';
+import mongoose from 'mongoose';
 
 // Import Routers
 import authRoutes from './modules/auth/routes/authRoutes';
@@ -33,7 +34,17 @@ app.use('/api/v1/assessments', assessmentRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'SkillVerse Server operational.' });
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  const statusCode = dbStatus === 'connected' ? 200 : 503;
+
+  res.status(statusCode).json({
+    status: statusCode === 200 ? 'OK' : 'ERROR',
+    message: 'SkillVerse Server health status',
+    services: {
+      database: dbStatus,
+    },
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // Catch all unmatched routes
