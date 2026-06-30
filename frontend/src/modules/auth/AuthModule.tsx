@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { api, setAuthToken, setSavedUser, getSavedUser } from '../../services/api';
-import { Mail, Lock, User, Briefcase, Eye, EyeOff, Sparkles, ArrowRight, ChevronLeft } from 'lucide-react';
+import { Mail, Lock, User, Briefcase, Eye, EyeOff, Sparkles, ArrowRight, ChevronLeft, Phone } from 'lucide-react';
 import { TiltCard } from '../../components/TiltCard';
 
 interface AuthModuleProps {
@@ -17,12 +17,12 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
   const [showPassword, setShowPassword] = useState(false);
 
   // Login state
-  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPhone, setLoginPhone] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
   // Register state
   const [regName, setRegName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
+  const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirm, setRegConfirm] = useState('');
 
@@ -40,11 +40,11 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
   // ── Login handler ─────────────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginEmail || !loginPassword) return;
+    if (!loginPhone || !loginPassword) return;
     setLoading(true);
     clearError();
     try {
-      const res = await api.auth.login(loginEmail, loginPassword);
+      const res = await api.auth.login(loginPhone, loginPassword);
       setAuthToken(res.data.accessToken);
       setSavedUser(res.data.user);
 
@@ -72,7 +72,7 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
-    if (!regName || !regEmail || !regPassword || !regConfirm) {
+    if (!regName || !regPhone || !regPassword || !regConfirm) {
       setError('All fields are required.');
       return;
     }
@@ -86,7 +86,7 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
     }
     setLoading(true);
     try {
-      const res = await api.auth.register(regEmail, regPassword, regName);
+      const res = await api.auth.register(regPhone, regPassword, regName);
       setAuthToken(res.data.accessToken);
       setSavedUser(res.data.user);
       setStep('role');
@@ -220,19 +220,19 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
             <p className="auth-card-sub">Sign in to your SkillVerse account</p>
 
             <div className="form-group">
-              <label className="form-label">Email address</label>
+              <label className="form-label">Phone Number</label>
               <div className="input-icon-wrapper">
-                <Mail size={16} className="input-icon" />
+                <Phone size={16} className="input-icon" />
                 <input
-                  id="login-email"
-                  type="email"
+                  id="login-phone"
+                  type="tel"
                   className="input-field input-with-icon"
-                  placeholder="you@example.com"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder="9876543210"
+                  value={loginPhone}
+                  onChange={(e) => setLoginPhone(e.target.value)}
                   required
                   disabled={loading}
-                  autoComplete="email"
+                  autoComplete="tel"
                 />
               </div>
             </div>
@@ -309,19 +309,19 @@ export const AuthModule: React.FC<AuthModuleProps> = ({ onAuthComplete, language
             </div>
 
             <div className="form-group">
-              <label className="form-label">Email address</label>
+              <label className="form-label">Phone Number</label>
               <div className="input-icon-wrapper">
-                <Mail size={16} className="input-icon" />
+                <Phone size={16} className="input-icon" />
                 <input
-                  id="reg-email"
-                  type="email"
+                  id="reg-phone"
+                  type="tel"
                   className="input-field input-with-icon"
-                  placeholder="you@example.com"
-                  value={regEmail}
-                  onChange={(e) => setRegEmail(e.target.value)}
+                  placeholder="9876543210"
+                  value={regPhone}
+                  onChange={(e) => setRegPhone(e.target.value)}
                   required
                   disabled={loading}
-                  autoComplete="email"
+                  autoComplete="tel"
                 />
               </div>
             </div>

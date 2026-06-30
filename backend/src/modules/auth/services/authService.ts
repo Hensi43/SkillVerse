@@ -16,26 +16,26 @@ export class AuthService {
    * Register a new user with email and password.
    */
   async register(
-    email: string,
+    phoneNumber: string,
     password: string,
     name: string
   ): Promise<{ accessToken: string; refreshToken: string; user: IUser }> {
-    if (!email || !password || !name) {
-      throw new BadRequestError('Name, email, and password are all required.');
+    if (!phoneNumber || !password || !name) {
+      throw new BadRequestError('Name, phone number, and password are all required.');
     }
     if (password.length < 6) {
       throw new BadRequestError('Password must be at least 6 characters long.');
     }
 
-    const existing = await this.userRepository.findByEmail(email);
+    const existing = await this.userRepository.findByPhoneNumber(phoneNumber);
     if (existing) {
-      throw new BadRequestError('An account with this email already exists.');
+      throw new BadRequestError('An account with this phone number already exists.');
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
 
     const user = await this.userRepository.create({
-      email: email.toLowerCase(),
+      phoneNumber,
       passwordHash,
       name,
       role: 'worker', // default, will be updated during role selection
@@ -52,21 +52,21 @@ export class AuthService {
    * Log in an existing user with email and password.
    */
   async login(
-    email: string,
+    phoneNumber: string,
     password: string
   ): Promise<{ accessToken: string; refreshToken: string; user: IUser }> {
-    if (!email || !password) {
-      throw new BadRequestError('Email and password are required.');
+    if (!phoneNumber || !password) {
+      throw new BadRequestError('Phone number and password are required.');
     }
 
-    const user = await this.userRepository.findByEmail(email);
+    const user = await this.userRepository.findByPhoneNumber(phoneNumber);
     if (!user || !user.passwordHash) {
-      throw new UnauthorizedError('Invalid email or password.');
+      throw new UnauthorizedError('Invalid phone number or password.');
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
-      throw new UnauthorizedError('Invalid email or password.');
+      throw new UnauthorizedError('Invalid phone number or password.');
     }
 
     const accessToken = this.generateAccessToken(user);

@@ -77,15 +77,15 @@ async function fetchClient(
 export const api = {
   // Authentication
   auth: {
-    register: (email: string, password: string, name: string) =>
+    register: (phoneNumber: string, password: string, name: string) =>
       fetchClient('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ phoneNumber, password, name }),
       }),
-    login: (email: string, password: string) =>
+    login: (phoneNumber: string, password: string) =>
       fetchClient('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ phoneNumber, password }),
       }),
     requestOtp: (phoneNumber: string) =>
       fetchClient('/auth/request-otp', {

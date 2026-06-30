@@ -12,8 +12,8 @@ export class AuthController {
 
   register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { email, password, name } = req.body;
-      const result = await this.authService.register(email, password, name);
+      const { phoneNumber, password, name } = req.body;
+      const result = await this.authService.register(phoneNumber, password, name);
       res.status(201).json({
         success: true,
         message: 'Account created successfully.',
@@ -22,7 +22,7 @@ export class AuthController {
           refreshToken: result.refreshToken,
           user: {
             id: result.user._id,
-            email: result.user.email,
+            phoneNumber: result.user.phoneNumber,
             name: result.user.name,
             role: result.user.role,
             preferredLanguage: result.user.preferredLanguage,
@@ -36,8 +36,8 @@ export class AuthController {
 
   login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { email, password } = req.body;
-      const result = await this.authService.login(email, password);
+      const { phoneNumber, password } = req.body;
+      const result = await this.authService.login(phoneNumber, password);
       res.status(200).json({
         success: true,
         message: 'Login successful.',
@@ -46,7 +46,7 @@ export class AuthController {
           refreshToken: result.refreshToken,
           user: {
             id: result.user._id,
-            email: result.user.email,
+            phoneNumber: result.user.phoneNumber,
             name: result.user.name,
             role: result.user.role,
             preferredLanguage: result.user.preferredLanguage,
